@@ -1,0 +1,4 @@
+base: configs/train/smolvla_4090.yaml
+conditions:
+  one_camera: {policy.cameras: {head: camera1}}
+  three_cameras: {policy.cameras: {head: camera1, left_wrist: camera2, right_wrist: camera3}}

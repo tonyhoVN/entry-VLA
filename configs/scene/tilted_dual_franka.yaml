@@ -1,0 +1,15 @@
+# SEPARATELY NAMED custom evaluation scene (stock DuoBench/PerAct2 scenes stay unchanged).
+# Demonstrations from stock scenes are NOT reused here without validation or recollection.
+scene_id: tilted_dual_franka_v1
+tilt_deg: 45.0
+base_separation_m: 0.80
+base_height_m: 0.60
+gripper: franka_hand
+T_flange_tcp: null            # null = documented Franka Hand F_T_EE (0.1034 m, -45 deg about z)
+finger_max_width_m: 0.08
+table_z: 0.0
+cameras:                      # ego/exo + two wrist; simulated depth. REAL depth availability unconfirmed.
+  - {name: ego, width: 640, height: 480, fovy_deg: 70, mount: world, look_at: {eye: [-0.20, 0.0, 1.25], target: [0.45, 0.0, 0.05]}}
+  - {name: exo, width: 640, height: 480, fovy_deg: 60, mount: world, look_at: {eye: [1.40, 0.30, 0.90], target: [0.45, 0.0, 0.05]}}
+  - {name: left_wrist, width: 424, height: 240, fovy_deg: 87, mount: left_tcp, T_parent_C: [[1,0,0,0.05],[0,1,0,0],[0,0,1,-0.05],[0,0,0,1]]}
+  - {name: right_wrist, width: 424, height: 240, fovy_deg: 87, mount: right_tcp, T_parent_C: [[1,0,0,0.05],[0,1,0,0],[0,0,1,-0.05],[0,0,0,1]]}

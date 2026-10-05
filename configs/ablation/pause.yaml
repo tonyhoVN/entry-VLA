@@ -1,0 +1,4 @@
+base: configs/compare.yaml
+conditions:
+  pause_0: {trial.pause_steps: 0}
+  pause_10: {trial.pause_steps: 10}

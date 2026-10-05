@@ -1,0 +1,8 @@
+base: configs/compare.yaml
+conditions:
+  simultaneous: {prep.arrival_order: simultaneous}
+  left_first: {prep.arrival_order: left_first}
+  right_first: {prep.arrival_order: right_first}
+negative_control: >
+  With a stable scene, stopped handoff and policy.reset() at handoff, arrival order should not
+  change the outcome distribution; a difference indicates a protocol leak (history, motion, contact).

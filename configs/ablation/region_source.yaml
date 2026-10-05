@@ -1,0 +1,5 @@
+base: configs/compare.yaml
+conditions:
+  oracle: {region.mode: oracle}
+  noisy_1cm: {region.mode: oracle_noisy, region.sigma_m: 0.01}
+  noisy_3cm: {region.mode: oracle_noisy, region.sigma_m: 0.03}

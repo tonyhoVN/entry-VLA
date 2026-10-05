@@ -110,7 +110,8 @@ def run_compare(args) -> int:
             for i in range(n):
                 seed = int(cfg["trials"].get("seed_start", 1000)) + i
                 rec = run_trial(be, policy, sel, region, arms, seed, F.make_trial_cfg(cfg, caps.name), F.make_prep(cfg),
-                                F.make_filter(cfg), wrist_T_EC=F.wrist_hand_eye(cfg), trial_id=f"{scfg['name']}_{i:05d}")
+                                F.make_filter(cfg), wrist_T_EC=F.wrist_hand_eye(cfg), trial_id=f"{scfg['name']}_{i:05d}",
+                                planner=F.make_planner(cfg, arms))
                 append_jsonl(os.path.join(run_dir, f"trials_{scfg['name']}.jsonl"), rec)
                 recs.append(rec)
             out[scfg["name"]] = recs

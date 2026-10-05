@@ -41,6 +41,7 @@ class PrepConfig:
     waypoint_mode: str = "dense"          # "dense" | "final_only" (backend plans internally, e.g. PerAct2)
     via_lift_m: float = 0.15              # retry: lift TCPs by this much before transit
     via_outward_m: float = 0.10           # retry: also move TCPs away from the arms' midline
+    arrival_order: str = "simultaneous"   # "simultaneous" | "left_first" | "right_first" (scheduling ablation)
     gripper_during_transit: float = 1.0   # open
 
 
@@ -85,6 +86,8 @@ class HandoffRecord:
 class JointSpacePlanner:
     """Direct joint-space interpolation; on clearance failure, retries through
     Cartesian via-points (lift, then lift+outward) and reports which route was used."""
+
+    planner_id = PLANNER_ID
 
     def __init__(self, arms: Dict[str, PandaArm], cfg: PrepConfig):
         self.arms = arms
@@ -137,6 +140,8 @@ class JointSpacePlanner:
         q_goal, why = self._ik_all(T_goal, q_start)
         if q_goal is None:
             return Plan(False, why, planning_time_s=time.perf_counter() - t0)
+        if self.cfg.arrival_order != "simultaneous":
+            return self._sequential(q_start, q_goal, t0)
         routes = [[]] + self._vias(q_start, T_goal)
         last_reason, last_pair, last_table = "", None, None
         for r_i, vias in enumerate(routes):
@@ -171,6 +176,31 @@ class JointSpacePlanner:
             return plan
         return Plan(False, last_reason or "no_route", min_pair_clearance=last_pair, min_table_clearance=last_table,
                     planning_time_s=time.perf_counter() - t0)
+
+    def _sequential(self, q_start, q_goal, t0) -> Plan:
+        """One arm travels while the other holds still, then the other arm travels."""
+        import time
+        order = {"left_first": ("left", "right"), "right_first": ("right", "left")}.get(self.cfg.arrival_order)
+        if order is None:
+            raise ValueError(f"unknown arrival_order {self.cfg.arrival_order!r}")
+        first, second = order
+        q_mid = {first: q_goal[first], second: q_start[second]}
+        paths, min_pair, min_table = [], np.inf, np.inf
+        for qa, qb in ((q_start, q_mid), (q_mid, q_goal)):
+            pth, mp, mt = self._segment(qa, qb)
+            paths.append(pth)
+            min_pair, min_table = min(min_pair, mp), min(min_table, mt)
+        dt = time.perf_counter() - t0
+        if min_pair < self.cfg.min_pair_clearance:
+            return Plan(False, "sequential:pair_clearance", min_pair_clearance=float(min_pair), planning_time_s=dt)
+        if min_table < self.cfg.min_table_clearance:
+            return Plan(False, "sequential:table_clearance", min_table_clearance=float(min_table), planning_time_s=dt)
+        q_path = {a: np.concatenate([p_[a] for p_ in paths]) for a in ARMS}
+        T_path = {a: np.stack([self.arms[a].fk(q) for q in q_path[a]]) for a in ARMS}
+        plan = Plan(True, q_path=q_path, T_path=T_path, min_pair_clearance=float(min_pair),
+                    min_table_clearance=float(min_table), planning_time_s=dt)
+        plan.reason = f"sequential:{self.cfg.arrival_order}"
+        return plan
 
 
 def _speed(obs: Observation, a: str) -> Optional[float]:

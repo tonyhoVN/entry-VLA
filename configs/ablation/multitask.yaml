@@ -1,0 +1,6 @@
+base: configs/train/entry_4090.yaml
+conditions:
+  carry_pot_only: {data.episodes_root: data/episodes/duobench/carry_pot_rgbd}
+  multitask: {data.episodes_root: data/episodes/duobench/multitask_rgbd}       # export each task into one root
+  heldout_task: {data.episodes_root: data/episodes/duobench/multitask_rgbd,
+                 data.splits: data/episodes/duobench/multitask_rgbd/splits_heldout_bin_sort.json}  # split.heldout: {task_id: [bin_sort]}

@@ -89,7 +89,22 @@ def make_selector(cfg: Dict[str, Any], seed: int, scorer=None, proposer=None, de
 
 
 def make_prep(cfg: Dict[str, Any]) -> PrepConfig:
-    return PrepConfig(**(cfg.get("prep") or {}))
+    p = dict(cfg.get("prep") or {})
+    p.pop("planner", None)
+    return PrepConfig(**p)
+
+
+def make_planner(cfg: Dict[str, Any], arms):
+    """``prep.planner``: ``jointspace`` (default, simulator planner, NOT MoveIt) or ``moveit`` (moveit_py, opt-in)."""
+    kind = (cfg.get("prep") or {}).get("planner", "jointspace")
+    if kind == "jointspace":
+        from ..sim.preparation import JointSpacePlanner
+        return JointSpacePlanner(arms, make_prep(cfg))
+    if kind == "moveit":
+        from ..sim.moveit_planner import MoveItPlanner
+        m = cfg.get("moveit") or {}
+        return MoveItPlanner(arms, group=m.get("group", "both_arms"), joint_order=m.get("joint_order"))
+    raise ValueError(f"unknown planner {kind!r}")
 
 
 def make_filter(cfg: Dict[str, Any]) -> FilterConfig:

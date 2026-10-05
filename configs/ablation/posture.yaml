@@ -1,0 +1,4 @@
+base: configs/train/entry_4090.yaml
+conditions:
+  with_posture: {data.include_joints: true}
+  without_posture: {data.include_joints: false}

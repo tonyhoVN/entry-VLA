@@ -55,13 +55,13 @@ def run_trial(backend, policy: LocalPolicy, selector: Selector, region: RegionEs
               trial_cfg: TrialConfig, prep_cfg: PrepConfig, filter_cfg: FilterConfig,
               wrist_T_EC: Optional[Dict[str, np.ndarray]] = None,
               arrival_verifier: Optional[Callable[[Observation], Dict[str, Any]]] = None,
-              trial_id: Optional[str] = None) -> Dict[str, Any]:
+              trial_id: Optional[str] = None, planner=None) -> Dict[str, Any]:
     t_wall = time.perf_counter()
     trial_id = trial_id or f"{selector.name}_seed{seed}"
     obs = backend.reset(seed=seed)
     rec: Dict[str, Any] = {"trial_id": trial_id, "seed": seed, "selector": selector.name,
                            "label_version": label_version(policy, trial_cfg, backend.name,
-                                                          PLANNER_ID)}
+                                                          getattr(planner, "planner_id", PLANNER_ID))}
     reg = region(obs)
     rec["pre_travel"] = {"t_s": obs.time, "q": {a: obs.arms[a].q.tolist() for a in ARMS},
                          "T_WE": {a: obs.arms[a].T_WE.tolist() for a in ARMS},
@@ -85,7 +85,7 @@ def run_trial(backend, policy: LocalPolicy, selector: Selector, region: RegionEs
         rec["arrival"] = {"skipped": "full_episode baseline (no preparation)", "prep_sim_time_s": 0.0}
         ho = None
     else:
-        planner = JointSpacePlanner(arms, prep_cfg)
+        planner = planner or JointSpacePlanner(arms, prep_cfg)
         ho = execute_preparation(backend, obs, chosen.T_WE, planner, arbiter, prep_cfg, gripper_goal=chosen.gripper,
                                  pause_steps=trial_cfg.pause_steps)
         rec["arrival"] = ho.as_dict()

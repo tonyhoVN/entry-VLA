@@ -104,7 +104,8 @@ def run_rollout(args) -> int:
         for i in range(n):
             seed = int(tr.get("seed_start", 1000)) + i
             rec = run_trial(be, policy, selector, region, arms, seed, F.make_trial_cfg(cfg, caps.name), F.make_prep(cfg),
-                            F.make_filter(cfg), wrist_T_EC=F.wrist_hand_eye(cfg), trial_id=f"trial{i:05d}")
+                            F.make_filter(cfg), wrist_T_EC=F.wrist_hand_eye(cfg), trial_id=f"trial{i:05d}",
+                            planner=F.make_planner(cfg, arms))
             append_jsonl(os.path.join(run_dir, "trials.jsonl"), rec)
             recs.append(rec)
     finally:

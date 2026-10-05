@@ -1,0 +1,5 @@
+base: configs/compare.yaml
+conditions:
+  joint: {selectors: [{name: joint, type: distance_shell, n: 32, scorer: joint}]}
+  factorized: {selectors: [{name: factorized, type: distance_shell, n: 32, scorer: factorized}]}
+note: both need the SAME trained scorer checkpoint (one label version) and identical seeds
