@@ -13,12 +13,12 @@ do **not** support the bimanual tasks. Use the forks:
 | markusgrotz/peract_bimanual | `bb0232a6ba3fe116566e9568f0c7af980ed6703d` (reference only) |
 
 ```bash
-conda create -n peract2 python=3.8 -y && conda activate peract2
+# pin CPython: conda-forge only has cffi 1.14.2 for GraalPy and would swap the interpreter
+conda create -n peract2 "python=3.8.*=*_cpython" pip "cffi==1.14.2" -y && conda activate peract2
 wget https://www.coppeliarobotics.com/files/V4_1_0/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz
 tar -xf CoppeliaSim_Edu_V4_1_0_Ubuntu20_04.tar.xz -C $HOME
 export COPPELIASIM_ROOT=$HOME/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$COPPELIASIM_ROOT QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
-conda install -c conda-forge cffi==1.14.2 -y
 pip install "numpy<1.25" pyyaml pytest
 git clone https://github.com/markusgrotz/PyRep.git ext/PyRep && git -C ext/PyRep checkout b8bd1d7a3182adcd570d001649c0849047ebf197
 pip install --no-build-isolation -e ext/PyRep    # setup.py imports cffi at build time
@@ -30,7 +30,7 @@ pip install -e .[test,io]
 pip check
 ```
 
-Installed on 2026-10-05 this way: Python 3.8.10, numpy 1.24.4, Pillow 9.5.0, PyRep 4.1.0.3, rlbench 1.2.1.
+Installed on 2026-10-05 this way: Python 3.8.11 (CPython), numpy 1.24.4, Pillow 9.5.0, PyRep 4.1.0.3, rlbench 1.2.1.
 Not installed: `yarr` (only `tools/create_videos.py`, `task_builder_bimanual.py`) and `open3d`
 (only `tools/visualize_dataset.py`). If a conda create is interrupted and later fails with
 `JSONDecodeError`, delete the cache dirs in `~/anaconda3/pkgs` whose `info/index.json` is empty.
