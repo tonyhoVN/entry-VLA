@@ -1,0 +1,7 @@
+# Manual skill-start overrides (keyed by exported episode_id). Example:
+# duobench_carry_pot_8bb551ed3cfb:
+#   proposed_start: 120
+#   interval: [110, 130]
+#   note: "visually checked overlay; handle occluded before frame 110"
+# duobench_carry_pot_xxxxxxxxxxxx: {reject: true, note: "failed demonstration"}
+{}

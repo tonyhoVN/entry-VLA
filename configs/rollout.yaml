@@ -1,0 +1,35 @@
+# Bounded entry-selection trials. Default backend=mock exercises plumbing only.
+defaults:
+  backend: mock
+seed: 0
+trials:
+  n: 10
+  seed_start: 1000
+  runs_root: runs
+  time_cap_s: 30.0
+policy:
+  type: mock_oracle          # smolvla: {checkpoint, action_stats, cameras, image_hw, device}
+selector:
+  type: fixed_canonical      # distance_shell | visibility_geometric | nearest_demo | supervised
+  T_OE:                      # entry in the region frame O (meters)
+    left:  [[1, 0, 0, 0.0], [0, -1, 0, 0.15], [0, 0, -1, 0.10], [0, 0, 0, 1]]
+    right: [[1, 0, 0, 0.0], [0, -1, 0, -0.15], [0, 0, -1, 0.10], [0, 0, 0, 1]]
+  scorer: null               # joint | factorized (requires a trained scorer)
+region:
+  mode: oracle               # LABELLED oracle condition; oracle_noisy adds sigma_m localisation error
+  oracle_points: {left: handles.left, right: handles.right}
+  sigma_m: 0.0
+robot:
+  arms: from_backend         # explicit {left: {T_WB, T_flange_tcp}, right: ...} for real backends
+  wrist_T_EC: null
+prep:
+  control_dt: 0.1
+  max_joint_speed: 1.0
+  table_z: 0.0
+filter:
+  table_z: 0.0
+trial:
+  max_policy_steps: 100
+  n_action_steps: 4
+  pause_steps: 0
+  reset_protocol: reset(seed)

@@ -1,0 +1,37 @@
+# Conservative single-RTX-4090 preset for SmolVLA fine-tuning (fit NOT verified; profile on request).
+seed: 0
+policy:
+  checkpoint: lerobot/smolvla_base      # HF revision d9f33c94 at audit time
+  chunk_size: 50
+  n_action_steps: 10
+  freeze_vision_encoder: true            # parameter-efficient knobs supported by the pinned config
+  train_expert_only: true
+  train_state_proj: true
+  empty_cameras: 0
+  cameras: {head: camera1, left_wrist: camera2, right_wrist: camera3}   # our name -> policy image key
+  image_hw: [256, 256]
+dataset:
+  repo_id: local/entry_vla_carry_pot
+  root: data/lerobot/carry_pot_v1
+  episodes_root: data/episodes/duobench/carry_pot_rgbd
+  splits: data/episodes/duobench/carry_pot_rgbd/splits.json   # only train episodes are written
+  segment_label: null           # e.g. bimanual_local_skill -> local-skill segments from annotated starts
+  fps: 30
+  robot_type: fr3_duo_robotiq
+  train_episodes: null
+train:
+  device: cuda:0
+  precision: bf16
+  batch_size: 4
+  grad_accum: 8                 # effective batch 32
+  steps: 20000
+  lr: 1.0e-4
+  warmup_steps: 1000
+  grad_clip: 10.0
+  weight_decay: 1.0e-10
+  activation_checkpointing: false
+  num_workers: 4
+  stats_batches: 50
+  log_every: 50
+  save_every: 2000
+  runs_root: runs

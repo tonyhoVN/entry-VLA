@@ -1,0 +1,17 @@
+seed: 0
+annotate:
+  episodes_root: data/episodes/duobench/carry_pot_rgbd
+  overrides: configs/overrides/skill_starts.yaml     # manual overrides keyed by episode_id
+  overlay_cameras: [head]
+  params:
+    label: bimanual_local_skill
+    radius: 0.20               # baseline parameter, not ground truth
+    max_angle_rad: 0.785
+    open_width_m: 0.03
+    close_drop_m: 0.01
+    min_lead_s: 0.3
+    stable_frames: 3
+    visibility_cameras: [head]
+    region_source: tcp_at_onset    # non-privileged; oracle:<key> bootstraps (recorded in provenance)
+    onset_source: gripper_close
+    roles: {left: approach, right: approach}

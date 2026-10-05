@@ -10,6 +10,7 @@ import sys
 COMMANDS = [
     "smoke",
     "data_cmds",
+    "policy_cmds",
 ]
 
 

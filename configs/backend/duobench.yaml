@@ -15,3 +15,6 @@ sim:                            # README "evaluation" settings
   async_control: true
   realtime: false
   frequency: 30
+# Privileged object sites for annotation/diagnostics or labelled oracle-region conditions.
+# Fill with site names from the task MJCF (not guessed), e.g. {handles.left: <site>, handles.right: <site>}.
+oracle_sites: {}

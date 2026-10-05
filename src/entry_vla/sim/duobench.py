@@ -197,10 +197,33 @@ class DuoBenchBackend(SimBackend):
             for k in ("is_grasped", "collision", "ik_success", "is_sim_converged", "gripper_width"):
                 if k in ai:
                     oracle[f"{a}.{k}"] = ai[k]
+        oracle.update(self._oracle_sites())
         return Observation(step=self._step, time=self._step / self.control_hz, arms=arms, cameras=cams,
                            instruction=str(info.get("instruction", "")), oracle=oracle,
                            backend_info={"frame_timestamp": info.get("frame_timestamp"),
                                          "camera_available": info.get("camera_available")})
+
+    def _oracle_sites(self) -> Dict[str, Any]:
+        """Privileged world positions of configured MuJoCo sites (annotation/diagnostics,
+        or explicitly labelled oracle-region conditions). ``oracle_sites`` maps a dotted
+        oracle key (e.g. ``handles.left``) to a site name taken from the task MJCF;
+        names are NOT guessed here. Positions are converted to W = MuJoCo world."""
+        sites = self.config.get("oracle_sites") or {}
+        if not sites or self.env is None:
+            return {}
+        mujoco = require_module("mujoco", "mujoco (installed with rcs-core)")
+        sim = self.env.get_wrapper_attr("sim")
+        out: Dict[str, Any] = {}
+        for key, site in sites.items():
+            sid = mujoco.mj_name2id(sim.model, mujoco.mjtObj.mjOBJ_SITE, site)
+            if sid < 0:
+                raise MissingAssetError(f"oracle site {site!r} not in the MuJoCo model; check the task MJCF")
+            node = out
+            parts = key.split(".")
+            for p_ in parts[:-1]:
+                node = node.setdefault(p_, {})
+            node[parts[-1]] = np.asarray(sim.data.site_xpos[sid], dtype=np.float64).copy()
+        return out
 
     # ------------------------------------------------------------ lifecycle
     def _require_env(self):

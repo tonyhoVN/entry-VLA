@@ -56,8 +56,10 @@ class MockBackend(SimBackend):
         self.success_radius = float(c.get("success_radius", 0.03))
         self.max_steps = int(c.get("max_steps", 200))
         self.lift_height = float(c.get("lift_height", 0.05))
-        self.arms = {"left": PandaArm(T_WB=make_T(rot_z(-np.pi / 2), [0.0, 0.45, 0.0])),
-                     "right": PandaArm(T_WB=make_T(rot_z(np.pi / 2), [0.0, -0.45, 0.0]))}
+        # home pose: shoulders turned toward the table (+x) so the arms do not start crossed
+        self.home_q1 = {"left": float(c.get("home_q1_left", 0.9)), "right": float(c.get("home_q1_right", -0.9))}
+        self.arms = {"left": PandaArm(T_WB=make_T(rot_z(-np.pi / 2), [0.0, 0.55, 0.0])),
+                     "right": PandaArm(T_WB=make_T(rot_z(np.pi / 2), [0.0, -0.55, 0.0]))}
         self.state: Dict[str, Any] = {}
         self.instruction = "lift the bar with both hands"
 
@@ -72,7 +74,7 @@ class MockBackend(SimBackend):
     # -------------------------------------------------------------- scene
     def _handles(self) -> Dict[str, np.ndarray]:
         c, yaw = self.state["bar_center"], self.state["bar_yaw"]
-        d = rot_z(yaw) @ np.array([0.0, 0.12, 0.0])
+        d = rot_z(yaw) @ np.array([0.0, 0.15, 0.0])
         return {"left": c + d, "right": c - d}
 
     def _scene_points(self) -> np.ndarray:
@@ -129,7 +131,7 @@ class MockBackend(SimBackend):
     def reset(self, seed: Optional[int] = None) -> Observation:
         rng = np.random.default_rng(seed)
         self.state = {
-            "q": {a: PANDA_Q_READY.copy() for a in ARMS},
+            "q": {a: PANDA_Q_READY + np.array([self.home_q1[a], 0, 0, 0, 0, 0, 0]) for a in ARMS},
             "dq": {a: np.zeros(7) for a in ARMS},
             "width": {a: 0.08 for a in ARMS},
             "bar_center": np.array([0.55 + rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), 0.0]),
