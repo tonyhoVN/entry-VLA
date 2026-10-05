@@ -1,0 +1,17 @@
+# DuoBench / RCS (MuJoCo). Stock benchmark scene: FR3 Duo + Robotiq 2F-85, cameras head/left_wrist/right_wrist.
+# Pins: duobench@85fdb6cc0615c078af8247f49576072f1f36fa8b, robot-control-stack@c7e81ed359d95ff40713fcac37d71759ba10e8f8
+name: duobench
+task: carry_pot             # registered id suffix (duobench/carry_pot); also: transfer_cube, bin_sort
+control_mode: CARTESIAN_TQuat   # rcs.envs.base.ControlMode member
+relative_to: NONE               # rcs.envs.base.RelativeTo member; NONE = absolute targets
+headless: true
+include_depth: true             # RGB-D experiment: uint16 mm depth -> float32 m
+require_depth: true
+binary_gripper: false
+control_hz: 30                  # used to timestamp steps; raw-recording rate is UNVERIFIED (30 Hz likely)
+camera_resolution: null         # [H, W] override; null keeps stock 1280x720
+gripper_max_width_m: 0.085      # Robotiq 2F-85 nominal stroke; normalised gripper * this = width
+sim:                            # README "evaluation" settings
+  async_control: true
+  realtime: false
+  frequency: 30

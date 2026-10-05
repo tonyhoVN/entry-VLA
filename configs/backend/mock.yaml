@@ -1,0 +1,7 @@
+# MOCK kinematic backend (tests and CLI plumbing only; not a benchmark)
+name: mock
+task: mock_bimanual_reach
+dt: 0.1
+image_hw: [48, 64]
+max_steps: 200
+require_depth: true

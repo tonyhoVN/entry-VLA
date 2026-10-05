@@ -1,0 +1,9 @@
+# PerAct2 bimanual RLBench (CoppeliaSim 4.1.0). Pins: markusgrotz/RLBench@8af748c51287989294e00c9c670e3330a0e35ed5,
+# markusgrotz/PyRep@b8bd1d7a3182adcd570d001649c0849047ebf197
+name: peract2
+task: bimanual_handover_item_easy   # verified in rlbench/bimanual_tasks/ at the pin
+headless: true
+image_size: [128, 128]
+cameras: [front, over_shoulder_left, over_shoulder_right, wrist_left, wrist_right]
+require_depth: true                 # live rendering uses depth_in_meters=true
+ignore_collisions: 0.0              # planner collision checking ON for preparation

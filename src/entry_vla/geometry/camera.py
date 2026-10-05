@@ -152,9 +152,7 @@ def render_point_depth(points_W: np.ndarray, K: np.ndarray, T_WC: np.ndarray, wi
     vi = np.round(uv[ok, 1]).astype(int)
     zi = z[ok]
     inside = (ui >= 0) & (ui < width) & (vi >= 0) & (vi < height)
-    for a, b, c in zip(ui[inside], vi[inside], zi[inside]):
-        if c < depth[b, a]:
-            depth[b, a] = c
+    np.minimum.at(depth, (vi[inside], ui[inside]), zi[inside])
     return depth
 
 
