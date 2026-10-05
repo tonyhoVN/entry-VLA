@@ -11,6 +11,7 @@ COMMANDS = [
     "smoke",
     "data_cmds",
     "policy_cmds",
+    "model_cmds",
 ]
 
 

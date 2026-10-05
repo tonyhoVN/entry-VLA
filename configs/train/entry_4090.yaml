@@ -1,0 +1,48 @@
+# Supervised paired-entry proposal model: conservative single-GPU preset (fit not profiled).
+seed: 0
+data:
+  episodes_root: data/episodes/duobench/carry_pot_rgbd
+  splits: data/episodes/duobench/carry_pot_rgbd/splits.json
+  label: bimanual_local_skill
+  cameras: []                  # [] = all non-moving (global) RGB-D cameras
+  allow_moving_cameras: false
+  n_points: 2048
+  workspace_min: [-1.0, -1.0, -0.05]
+  workspace_max: [1.5, 1.0, 1.2]
+  query_stride: 5
+  min_gap_frames: 5
+  max_queries_per_episode: 8
+  geometry_source: null        # e.g. "oracle:handles" => labelled ORACLE condition
+  pose_frame: W                # region_point requires geometry_source
+  include_joints: true
+text_encoder: {type: hashing, dim: 64}     # hf: {type: hf, model_name: <frozen encoder>} (user-run download)
+model:
+  num_candidates: 8
+  point_feat_dim: 128
+  hidden: 256
+  num_roles: 2
+  pose_frame: W
+  dropout: 0.1
+loss:
+  w_pos: 1.0                   # per metre
+  w_rot: 0.5                   # per radian
+  w_grip: 0.1
+  w_role: 0.1
+  w_cls: 0.2
+  wta_epsilon: 0.05
+train:
+  device: cuda:0
+  precision: bf16
+  batch_size: 32
+  grad_accum: 1
+  steps: 20000
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  grad_clip: 1.0
+  log_every: 50
+  save_every: 2000
+  runs_root: runs
+  tiny_overfit: false          # train.tiny_overfit=true train.steps=300 for an overfit sanity check
+  tiny_overfit_samples: 8
+eval:
+  allow_test: false
