@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "entry-vla"
+version = "0.1.0"
+description = "Entry-state prediction for handing off from a geometric planner to a frozen local VLA policy (simulation-first)."
+requires-python = ">=3.8"
+# Core (geometry, episode format, annotation, metrics) is numpy/pyyaml only so it
+# can run inside either simulator environment. Heavy stacks are optional extras.
+dependencies = ["numpy>=1.21", "pyyaml>=5.4"]
+
+[project.optional-dependencies]
+test = ["pytest>=6"]
+train = ["torch>=2.1"]
+io = ["h5py>=3", "pillow>=9"]
+viz = ["matplotlib>=3.5", "pillow>=9"]
+
+[project.scripts]
+entry-vla = "entry_vla.cli.main:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+  "sim: opt-in simulator integration test (requires installed backend + assets; run with --run-sim)",
+  "torch: requires torch",
+]

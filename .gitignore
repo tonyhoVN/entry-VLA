@@ -1,0 +1,22 @@
+# generated artifacts (raw demonstrations live under data/ and stay immutable)
+data/*
+!data/.gitkeep
+runs/*
+!runs/.gitkeep
+# tooling
+.codegraph/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+build/
+dist/
+# large binaries
+*.mp4
+*.hdf5
+*.h5
+*.safetensors
+*.pt
+*.ckpt
+.vscode/
