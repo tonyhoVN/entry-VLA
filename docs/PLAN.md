@@ -26,7 +26,7 @@ directories, LeRobot v3 datasets and JSONL trial/probe records.
 |---|---|---|---|
 | `duobench` | 3.11 | RCS/MuJoCo simulation, raw export, RGB-D re-render, trials | `envs/duobench/README.md` |
 | `peract2` | 3.8 | CoppeliaSim 4.1 / PyRep / RLBench forks | `envs/peract2/README.md` |
-| `entryvla-train` | 3.12 | lerobot 0.6.1 SmolVLA, entry model, scorer | `envs/train/README.md` |
+| `entryvla` | 3.12 | lerobot 0.6.1 SmolVLA, entry model, scorer | `envs/train/README.md` |
 
 `entry_vla` core needs only numpy and pyyaml (Python ≥3.8). Torch, pyarrow, PIL and matplotlib
 are imported lazily where they are needed.

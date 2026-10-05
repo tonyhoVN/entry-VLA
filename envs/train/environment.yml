@@ -1,0 +1,16 @@
+# Training / core env for entry-vla (lerobot 0.6.1 SmolVLA, entry model, scorer, offline tools).
+# Create:  conda env create -f envs/train/environment.yml   (run from the repo root)
+# Simulator envs are separate (envs/duobench, envs/peract2) because their Python versions conflict.
+name: entryvla
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - pip
+  - ffmpeg            # video encode/decode for LeRobot v3 datasets
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu128
+      - torch>=2.7,<2.12          # lerobot 0.6.1 constraint; cu128 wheels (driver CUDA >= 12.8)
+      - torchvision
+      - lerobot[smolvla,dataset]==0.6.1   # 'dataset' extra: LeRobotDataset (datasets, video codecs)
+      - -e ../..[test,train,io,viz]
