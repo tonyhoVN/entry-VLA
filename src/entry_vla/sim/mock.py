@@ -55,6 +55,7 @@ class MockBackend(SimBackend):
         self.image_hw = tuple(c.get("image_hw", (48, 64)))
         self.success_radius = float(c.get("success_radius", 0.03))
         self.max_steps = int(c.get("max_steps", 200))
+        self.lift_height = float(c.get("lift_height", 0.05))
         self.arms = {"left": PandaArm(T_WB=make_T(rot_z(-np.pi / 2), [0.0, 0.45, 0.0])),
                      "right": PandaArm(T_WB=make_T(rot_z(np.pi / 2), [0.0, -0.45, 0.0]))}
         self.state: Dict[str, Any] = {}
@@ -118,9 +119,11 @@ class MockBackend(SimBackend):
         near = {a: float(np.linalg.norm(arms[a].T_WE[:3, 3] - h[a])) for a in ARMS}
         closed = {a: arms[a].gripper_width < 0.02 for a in ARMS}
         grasp = {a: near[a] < self.success_radius and closed[a] for a in ARMS}
-        stage = int(sum(near[a] < 0.10 for a in ARMS) > 0) + int(all(grasp.values()))
-        return {"dist_to_handle": near, "grasped": grasp, "stage": stage, "max_stage": 2,
-                "success": all(grasp.values())}
+        attached = bool(self.state.get("attached", False))
+        lifted = attached and float(self.state["bar_center"][2]) > self.lift_height
+        stage = int(any(near[a] < 0.10 for a in ARMS)) + int(all(grasp.values()) or attached) + int(lifted)
+        return {"dist_to_handle": near, "grasped": grasp, "attached": attached, "stage": stage, "max_stage": 3,
+                "success": lifted}
 
     # ---------------------------------------------------------- lifecycle
     def reset(self, seed: Optional[int] = None) -> Observation:
@@ -131,6 +134,8 @@ class MockBackend(SimBackend):
             "width": {a: 0.08 for a in ARMS},
             "bar_center": np.array([0.55 + rng.uniform(-0.05, 0.05), rng.uniform(-0.05, 0.05), 0.0]),
             "bar_yaw": float(rng.uniform(-0.3, 0.3)),
+            "attached": False,
+            "attach_offset": None,
             "step": 0,
             "seed": seed,
         }
@@ -151,17 +156,35 @@ class MockBackend(SimBackend):
             target_w = 0.08 * float(cmd.gripper[a])
             w = self.state["width"][a]
             self.state["width"][a] = w + np.clip(target_w - w, -self.gripper_speed * self.dt, self.gripper_speed * self.dt)
+        self._update_attachment()
         self.state["step"] += 1
         obs = self._observe()
         success = bool(obs.oracle["success"])
         return StepResult(obs, float(success), success, self.state["step"] >= self.max_steps,
                           {"success": success, "stage": obs.oracle["stage"]})
 
+    def _update_attachment(self) -> None:
+        """Kinematic attachment: once both handles are grasped the bar follows
+        the TCP midpoint; opening either gripper drops it back to the table."""
+        tcp = {a: self._T_WE(a)[:3, 3] for a in ARMS}
+        mid = 0.5 * (tcp["left"] + tcp["right"])
+        if self.state["attached"]:
+            if any(self.state["width"][a] > 0.03 for a in ARMS):
+                self.state["attached"] = False
+                self.state["bar_center"][2] = 0.0
+            else:
+                self.state["bar_center"] = mid - self.state["attach_offset"]
+            return
+        h = self._handles()
+        if all(np.linalg.norm(tcp[a] - h[a]) < self.success_radius and self.state["width"][a] < 0.02 for a in ARMS):
+            self.state["attached"] = True
+            self.state["attach_offset"] = mid - self.state["bar_center"]
+
     def convert_command(self, cmd: BimanualTcpCommand, obs: Observation) -> BimanualTcpCommand:
         return cmd
 
     def task_predicates(self, obs: Observation) -> Dict[str, Any]:
-        return {k: obs.oracle[k] for k in ("dist_to_handle", "grasped", "stage", "max_stage", "success")}
+        return {k: obs.oracle[k] for k in ("dist_to_handle", "grasped", "attached", "stage", "max_stage", "success")}
 
     def get_state_snapshot(self) -> Dict[str, Any]:
         return copy.deepcopy(self.state)
