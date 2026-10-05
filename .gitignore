@@ -20,3 +20,4 @@ dist/
 *.pt
 *.ckpt
 .vscode/
+ext/
