@@ -57,6 +57,14 @@ def make_policy(cfg: Dict[str, Any]):
         with open(p["action_stats"]) as f:
             stats = json.load(f)
         return SmolVLAPolicyAdapter(p["checkpoint"], p["cameras"], p["image_hw"], stats, device=p.get("device", "cuda:0"))
+    if t == "remote":
+        import os
+        from ..policies.service import RemotePolicy
+        key = os.environ.get(p.get("authkey_env", "ENTRY_VLA_POLICY_AUTHKEY"), "").encode()
+        if not key:
+            raise ValueError("set the policy service authkey env var (default ENTRY_VLA_POLICY_AUTHKEY)")
+        return RemotePolicy((p.get("host", "127.0.0.1"), int(p["port"])), key, p["cameras"],
+                            send_depth=bool(p.get("send_depth", False)), send_oracle=False)
     raise ValueError(f"unknown policy type {t!r} (expert replay is diagnostic-only and not selectable here)")
 
 

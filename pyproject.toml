@@ -14,7 +14,7 @@ dependencies = ["numpy>=1.21", "pyyaml>=5.4"]
 [project.optional-dependencies]
 test = ["pytest>=6"]
 train = ["torch>=2.1"]
-io = ["h5py>=3", "pillow>=9"]
+io = ["pyarrow>=12", "pillow>=9"]
 viz = ["matplotlib>=3.5", "pillow>=9"]
 
 [project.scripts]

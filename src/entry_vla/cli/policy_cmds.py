@@ -29,6 +29,12 @@ def register(sub) -> None:
     add_common(p, "configs/train/smolvla_4090.yaml")
     p.set_defaults(func=run_policy_dataset)
 
+    p = sub.add_parser("serve-policy", help="serve a frozen policy on localhost for simulator envs (user-run)")
+    add_common(p, "configs/rollout.yaml")
+    p.add_argument("--port", type=int, default=50555)
+    p.add_argument("--max-requests", type=bounded_int(1, 10_000_000), default=None)
+    p.set_defaults(func=run_serve_policy)
+
     p = sub.add_parser("train-smolvla", help="fine-tune SmolVLA with chunk re-encoding + grad accumulation (user-run)")
     add_common(p, "configs/train/smolvla_4090.yaml")
     p.set_defaults(func=run_train_smolvla)
@@ -163,4 +169,21 @@ def run_train_smolvla(args) -> int:
     run_dir = make_run_dir(cfg["train"].get("runs_root", "runs"), "smolvla")
     write_json(os.path.join(run_dir, "manifest.json"), run_manifest(cfg))
     emit(train(cfg, run_dir))
+    return 0
+
+
+def run_serve_policy(args) -> int:
+    from ..evaluation.factory import make_policy
+    from ..policies.service import SERVICE_VERSION, serve
+    cfg = load(args)
+    key = os.environ.get("ENTRY_VLA_POLICY_AUTHKEY", "").encode()
+    rep = {"policy": cfg["policy"]["type"], "port": args.port, "version": SERVICE_VERSION}
+    if args.dry_run:
+        emit({**rep, "authkey_set": bool(key), "dry_run": True})
+        return 0
+    if not key:
+        fail("set ENTRY_VLA_POLICY_AUTHKEY (shared secret for the localhost policy service)")
+    if cfg["policy"]["type"] == "remote":
+        fail("serve-policy needs a concrete policy (e.g. smolvla), not remote")
+    emit({**rep, **serve(make_policy(cfg), ("127.0.0.1", args.port), key, args.max_requests)})
     return 0
