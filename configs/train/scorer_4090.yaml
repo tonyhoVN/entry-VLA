@@ -1,0 +1,14 @@
+seed: 0
+data:
+  probe_files: [runs/<probe_run>/probes.jsonl]   # one label version only (policy/controller/reset/timeout)
+  val_fraction: 0.2                             # split by scene group, never by probe
+  salt: scorer
+model: {point_feat_dim: 128, hidden: 256}
+train:
+  device: cuda:0
+  batch_size: 64
+  steps: 5000
+  lr: 3.0e-4
+  weight_decay: 1.0e-4
+  log_every: 50
+  runs_root: runs

@@ -288,3 +288,20 @@ def demo_library_from_annotations(episodes, annotations: Dict[str, Dict[str, Any
         rows.append({"episode_id": ep.episode_id, "region_points": pts,
                      "T_OE": {a: invert_T(T_WO) @ ep.lowdim[f"{a}.T_WE"][t] for a in ARMS}})
     return rows
+
+
+class FullEpisodeSelector(Selector):
+    """VLA-only full-episode baseline: no preparation; the policy starts from the
+    reset pose and gets the full-episode step budget (``trial.full_episode_steps``)."""
+
+    name = "full_episode"
+    skip_preparation = True
+
+    def propose(self, ctx):
+        return [EntryCandidate({a: ctx.obs.arms[a].T_WE.copy() for a in ARMS}, source=self.name)]
+
+    def select(self, ctx):
+        c = self.propose(ctx)[0]
+        c.valid = True
+        return {"selector": self.name, "region_source": ctx.region.source, "n_candidates": 1, "n_valid": 1,
+                "chosen": c, "rejections": []}

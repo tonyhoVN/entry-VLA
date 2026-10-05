@@ -1,0 +1,23 @@
+# Matched comparison: identical frozen policy/controller/seeds for every selector; one benchmark per run.
+defaults:
+  backend: mock
+seed: 0
+trials: {n: 20, seed_start: 9000, runs_root: runs, time_cap_s: 30.0}
+reference: fixed_canonical
+policy: {type: mock_oracle}
+region: {mode: oracle, oracle_points: {left: handles.left, right: handles.right}, sigma_m: 0.0}
+robot: {arms: from_backend}
+selectors:
+  - name: fixed_canonical
+    type: fixed_canonical
+    T_OE:
+      left:  [[1, 0, 0, 0.0], [0, -1, 0, 0.15], [0, 0, -1, 0.10], [0, 0, 0, 1]]
+      right: [[1, 0, 0, 0.0], [0, -1, 0, -0.15], [0, 0, -1, 0.10], [0, 0, 0, 1]]
+  - {name: distance_shell, type: distance_shell, n: 32, radius: 0.12}
+  - {name: full_episode, type: full_episode}
+budgets:                                # report demo/probe budgets so comparisons are fair
+  demonstrations: 0
+  probes: 0
+prep: {control_dt: 0.1, max_joint_speed: 1.0, table_z: 0.0}
+filter: {table_z: 0.0}
+trial: {max_policy_steps: 100, n_action_steps: 4, full_episode_steps: 200}

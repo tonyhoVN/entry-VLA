@@ -1,0 +1,32 @@
+# Frozen-policy candidate probes (M4). Bounded: attempts <= n_scenes * (1 + perturbations + shell).
+defaults:
+  backend: mock
+seed: 0
+runs_root: runs
+policy: {type: mock_oracle}            # the FROZEN local policy whose outcomes are labelled
+selector:                              # base entry that perturbations are drawn around
+  type: fixed_canonical
+  T_OE:
+    left:  [[1, 0, 0, 0.0], [0, -1, 0, 0.15], [0, 0, -1, 0.10], [0, 0, 0, 1]]
+    right: [[1, 0, 0, 0.0], [0, -1, 0, -0.15], [0, 0, -1, 0.10], [0, 0, 0, 1]]
+region: {mode: oracle, oracle_points: {left: handles.left, right: handles.right}}
+robot: {arms: from_backend}
+probes:
+  n_scenes: 10
+  seed_start: 5000
+  perturbations_per_scene: 8
+  max_pos_m: 0.08
+  max_rot_rad: 0.35
+  shell_per_scene: 0
+  shell_radius: 0.20
+  reset_check_tol_m: 0.001
+  arm_success_keys: {left: grasped.left, right: grasped.right}
+inputs:                                 # pre-travel model inputs cached per scene
+  n_points: 1024
+  cameras: []
+  geometry_source: null
+  pose_frame: W
+text_encoder: {type: hashing, dim: 64}
+prep: {control_dt: 0.1, max_joint_speed: 1.0, table_z: 0.0}
+filter: {table_z: 0.0}
+trial: {max_policy_steps: 100, n_action_steps: 4, pause_steps: 0, min_clearance_m: 0.0}

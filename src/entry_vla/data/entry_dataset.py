@@ -56,20 +56,13 @@ def geometry_at(ep: Episode, t: int, source: str) -> Dict[str, np.ndarray]:
     return {a: np.asarray(ep.oracle[f"{key}.{a}"])[t] for a in ARMS}
 
 
-def point_cloud(ep: Episode, t: int, cfg: EntrySampleConfig, rng: np.random.Generator):
-    cams = cfg.cameras or [c for c, m in ep.meta["cameras"].items() if not m.get("moving")]
+def cloud_from_views(views, cfg: EntrySampleConfig, rng: np.random.Generator):
+    """``views``: iterable of (depth, valid, K, T_WC, rgb|None) -> fixed-size (N,6) cloud in W + mask."""
     pts, cols = [], []
-    for c in cams:
-        if ep.meta["cameras"][c].get("moving") and not cfg.allow_moving_cameras:
-            raise ValueError(f"camera {c} moves with the arm; set allow_moving_cameras for query-time views")
-        cam = ep.cameras[c]
-        if "depth" not in cam:
-            raise KeyError(f"{ep.episode_id}: camera {c} has no depth (RGB-D input required)")
-        T_WC = cam["T_WC"][t] if cam["T_WC"].ndim == 3 else cam["T_WC"]
-        m = cam["depth_valid"][t] if "depth_valid" in cam else cam["depth"][t] > 0
-        P = apply_T(T_WC, backproject(cam["depth"][t], cam["K"], m))
+    for depth, valid, K, T_WC, rgb in views:
+        P = apply_T(T_WC, backproject(depth, K, valid))
         pts.append(P)
-        cols.append(cam["rgb"][t][m].astype(np.float32) / 255.0 if "rgb" in cam else np.zeros((len(P), 3), np.float32))
+        cols.append(rgb[valid].astype(np.float32) / 255.0 if rgb is not None else np.zeros((len(P), 3), np.float32))
     P = np.concatenate(pts) if pts else np.zeros((0, 3))
     C = np.concatenate(cols) if cols else np.zeros((0, 3), np.float32)
     lo, hi = np.asarray(cfg.workspace_min), np.asarray(cfg.workspace_max)
@@ -82,6 +75,58 @@ def point_cloud(ep: Episode, t: int, cfg: EntrySampleConfig, rng: np.random.Gene
         out[:len(idx), :3], out[:len(idx), 3:] = P[idx], C[idx]
         mask[:len(idx)] = True
     return out, mask
+
+
+def _check_camera(name: str, moving: bool, cfg: EntrySampleConfig) -> None:
+    if moving and not cfg.allow_moving_cameras:
+        raise ValueError(f"camera {name} moves with the arm; set allow_moving_cameras for query-time views")
+
+
+def point_cloud(ep: Episode, t: int, cfg: EntrySampleConfig, rng: np.random.Generator):
+    cams = cfg.cameras or [c for c, m in ep.meta["cameras"].items() if not m.get("moving")]
+    views = []
+    for c in cams:
+        _check_camera(c, bool(ep.meta["cameras"][c].get("moving")), cfg)
+        cam = ep.cameras[c]
+        if "depth" not in cam:
+            raise KeyError(f"{ep.episode_id}: camera {c} has no depth (RGB-D input required)")
+        T_WC = cam["T_WC"][t] if cam["T_WC"].ndim == 3 else cam["T_WC"]
+        m = cam["depth_valid"][t] if "depth_valid" in cam else cam["depth"][t] > 0
+        views.append((cam["depth"][t], m, cam["K"], T_WC, cam["rgb"][t] if "rgb" in cam else None))
+    return cloud_from_views(views, cfg, rng)
+
+
+def observation_inputs(obs, cfg: EntrySampleConfig, text_emb: np.ndarray, rng: np.random.Generator,
+                       geometry_points: Optional[Dict[str, np.ndarray]] = None) -> Dict[str, Any]:
+    """Model inputs from a LIVE pre-travel observation (same conventions as make_samples).
+
+    ``geometry_points`` must come from a labelled test-time source (RegionEstimate)."""
+    cams = cfg.cameras or [n for n, c in obs.cameras.items() if not c.moving]
+    views = []
+    for n in cams:
+        c = obs.cameras[n]
+        _check_camera(n, c.moving, cfg)
+        if c.depth is None:
+            raise KeyError(f"camera {n} has no depth (RGB-D input required)")
+        views.append((c.depth, c.depth_valid if c.depth_valid is not None else c.depth > 0, c.K, c.T_WC, c.rgb))
+    pts, mask = cloud_from_views(views, cfg, rng)
+    T_FW = np.eye(4)
+    geom = np.zeros(6, np.float32)
+    if cfg.geometry_source:
+        if geometry_points is None:
+            raise ValueError("model was trained with a geometry source; pass geometry_points")
+        if cfg.pose_frame == "region_point":
+            T_FW = region_frame(geometry_points)
+        geom = np.concatenate([apply_T(invert_T(T_FW), geometry_points[a]) for a in ARMS]).astype(np.float32)
+    T_inv = invert_T(T_FW)
+    pts[mask, :3] = apply_T(T_inv, pts[mask, :3])
+    a = obs.arms
+    state = encode_state(T_inv @ a["left"].T_WE, T_inv @ a["right"].T_WE, a["left"].gripper_width or 0.0,
+                         a["right"].gripper_width or 0.0)
+    if cfg.include_joints:
+        state = np.concatenate([state, a["left"].q, a["right"].q]).astype(np.float32)
+    return {"points": pts, "points_mask": mask, "text": text_emb.astype(np.float32), "state": state,
+            "geometry": geom, "T_FW": T_FW.astype(np.float32)}
 
 
 def start_annotation(ep: Episode, label: str) -> Optional[Dict[str, Any]]:
