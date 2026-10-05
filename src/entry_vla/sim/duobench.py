@@ -99,7 +99,7 @@ class DuoBenchBackend(SimBackend):
             gripper="Robotiq 2F-85 (stock DuoBench scene)",
             live_depth=True,
             recorded_depth="absent",  # duobench_raw carry_pot/sim parquet has no depth columns
-            state_snapshot="unverified",
+            state_snapshot="unverified",  # via RCS set_replay_state: joint qpos/qvel only, see restore_state_snapshot
             prefix_replay=True,
             task_predicates=True,
             stage_annotations=True,
@@ -237,6 +237,34 @@ class DuoBenchBackend(SimBackend):
 
     def task_predicates(self, obs: Observation) -> Dict[str, Any]:
         return dict(obs.oracle)
+
+    # ------------------------------------------------- replay-state restore
+    def get_state_snapshot(self) -> Dict[str, Any]:
+        """Recorded-style state from the last step's info (``info[arm]['sim_state']``)."""
+        for v in self._last_info.values():
+            if isinstance(v, dict) and "sim_state" in v:
+                return {"sim_state": np.asarray(v["sim_state"], dtype=np.float64),
+                        "sim_state_schema": v.get("sim_state_schema"), "completeness": "joint qpos/qvel (UNVERIFIED)"}
+        raise UnsupportedCapabilityError("last info carries no sim_state; enable state recording in RCS")
+
+    def restore_state_snapshot(self, snapshot: Dict[str, Any], hold_action: Optional[Dict[str, Any]] = None) -> Observation:
+        """Restore through RCS's own replay mechanism
+        (``rcs.sim.replayer.restore_sim_step``: ``set_replay_state`` on the lead env;
+        the next ``step`` sets the state instead of integrating physics).
+
+        Restores what the schema covers (joint qpos/qvel). Contacts, controller
+        targets, gripper attachment and task-stage bookkeeping are NOT guaranteed;
+        callers must validate (see ``data.duobench_replay.validate_replay``)."""
+        self._require_env()
+        replayer = require_module("rcs.sim.replayer", "robot-control-stack with rcs.sim.replayer")
+        step = replayer.RecordedSimStep(step=self._step, uuid="restore", timestamp=None, observation={},
+                                        info={"sim_state": snapshot["sim_state"],
+                                              "sim_state_schema": snapshot.get("sim_state_schema")},
+                                        action=None, instruction="", success=False)
+        replayer.restore_sim_step(self.env, step)
+        if hold_action is None:
+            raise ValueError("restore needs the native hold action to pass through the wrapper stack")
+        return self.step_native(hold_action).obs
 
     def close(self) -> None:
         if self.env is not None:

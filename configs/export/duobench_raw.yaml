@@ -1,0 +1,16 @@
+format: duobench_raw
+source: data/raw/duobench_raw/carry_pot/sim/2026-05-15_part-0_no_rotation.parquet
+task_id: carry_pot
+out_root: data/episodes/duobench/carry_pot_rgb
+rgbd_out_root: data/episodes/duobench/carry_pot_rgbd
+max_episodes: 1
+episode_offset: 0
+image_hw: [224, 224]          # null keeps 1280x720 (large)
+cameras: [head, left_wrist, right_wrist]
+gripper_stroke_m: 0.085
+frames:
+  # Required: compose root_frame_to_world @ shared_base_frame_to_root_frame from the task config
+  # (`entry-vla duobench-frames` prints it), then confirm with `entry-vla inspect --handeye`.
+  T_world_shared: null
+  T_shared_armbase: null      # {left: 4x4, right: 4x4} to express info.absolute_action in W
+  allow_unverified_identity_frame: false

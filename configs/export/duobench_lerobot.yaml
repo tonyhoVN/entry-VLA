@@ -1,0 +1,6 @@
+format: duobench_lerobot
+source: data/raw/duobench_lerobot/carry_pot/sim
+task_id: carry_pot
+out_root: data/episodes/duobench/carry_pot_lerobot
+max_episodes: 1
+decode_videos: false

@@ -9,6 +9,7 @@ import sys
 # subcommand modules; each exposes register(subparsers)
 COMMANDS = [
     "smoke",
+    "data_cmds",
 ]
 
 

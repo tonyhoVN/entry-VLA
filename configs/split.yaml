@@ -1,0 +1,8 @@
+seed: 0
+split:
+  episodes_root: data/episodes/duobench/carry_pot_rgbd
+  out: data/episodes/duobench/carry_pot_rgbd/splits.json
+  by: source_demo_id         # groups descendants (re-renders, probes) of one demonstration
+  fractions: [0.8, 0.1, 0.1]
+  salt: entry_vla
+  heldout: {}                # e.g. {task_id: [bin_sort]} -> separately reported held-out task

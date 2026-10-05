@@ -1,0 +1,8 @@
+format: peract2_dir
+source: data/raw/peract2/bimanual_handover_item_easy.val/bimanual_handover_item_easy   # <task> dir inside the squashfs
+task_id: bimanual_handover_item_easy
+out_root: data/episodes/peract2/bimanual_handover_item_easy
+max_episodes: 1
+image_hw: null
+cameras: [front, over_shoulder_left, over_shoulder_right, wrist_left, wrist_right]
+assumed_timestep_s: 0.05      # UNVERIFIED CoppeliaSim step; recorded as derived

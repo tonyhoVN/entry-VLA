@@ -1,0 +1,4 @@
+format: mock
+task_id: mock_bimanual_reach
+out_root: data/episodes/mock
+max_episodes: 4
