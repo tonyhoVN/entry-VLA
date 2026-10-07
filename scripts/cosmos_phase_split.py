@@ -5,7 +5,8 @@ RLBench episode into a transition phase and a manipulation phase, with its reaso
 Steps:
   1. ``--make-video`` builds a label-free 4 fps clip (the rate the Cosmos 3 model card
      recommends) from the raw episode: front | overhead | wrist RGB side by side, with only
-     the *source frame index* burned in so the answer can be mapped back to frames.
+     the source frame index burned in for humans; the model answers in seconds, which are
+     mapped back to source frames through clip.json.
      No phase labels or detector output are drawn (that would leak the answer).
   2. ``--query`` sends the clip (base64 data URL, so it works through an SSH tunnel) and the
      prompt, then writes the raw answer and the parsed JSON to ``--out``.
@@ -41,16 +42,22 @@ RECORD_HZ = 20  # RLBench demo frames (0.05 s step, assumed)
 
 PROMPT = """This video shows a simulated Franka Panda robot arm performing the task: "{instruction}".
 The three panels are, left to right: a front camera, an overhead camera, and a camera mounted on the robot wrist.
-The number in the top-left corner is the original frame index (recorded at {record_hz} Hz; this clip is subsampled to {fps} fps).
+The video is {duration:.2f} seconds long ({fps} fps).
 
 We want to split the episode into two phases:
 1. Transition phase: the arm moves through free space from its start pose toward the task-relevant object. This part could be done by a generic motion planner.
 2. Manipulation phase: starting from a pose close to and aligned with the object, the arm performs the task-specific local skill (final approach, contact, and the interaction itself).
 
-Watch the video carefully and reason about the motion: when the arm stops traveling, where the gripper is relative to the target, what the wrist camera sees, when the gripper state changes, and when contact with the object happens.
+Reason step by step about the motion over time: when the arm stops traveling, where the gripper is relative to the target, what the wrist camera sees, when the gripper state changes, and when contact with the object happens.
 
-Then answer with a JSON object on the last lines, using the frame indices shown in the video:
-{{"transition_start_frame": int, "transition_end_frame": int, "manipulation_start_frame": int, "manipulation_end_frame": int, "contact_frame": int, "explanation": "short justification of the boundary"}}"""
+Answer in the following format:
+<think>
+your step-by-step reasoning, citing timestamps in seconds
+</think>
+
+<answer>
+{{"transition_start_s": float, "transition_end_s": float, "manipulation_start_s": float, "manipulation_end_s": float, "contact_s": float, "explanation": "short justification of the boundary"}}
+</answer>"""
 
 
 def make_video(ep, out_path, fps, size):
@@ -135,7 +142,10 @@ def main():
         raise SystemExit("no clip yet; run with --make-video")
 
     descr = load_pickle(os.path.join(a.episode, "variation_descriptions.pkl"))
-    prompt = PROMPT.format(instruction=descr[0] if descr else "unknown", record_hz=RECORD_HZ, fps=a.fps)
+    with open(clip_meta_path) as f:
+        clip = json.load(f)
+    duration = len(clip["source_frames"]) / a.fps
+    prompt = PROMPT.format(instruction=descr[0] if descr else "unknown", duration=duration, fps=a.fps)
     with open(video, "rb") as f:
         url = "data:video/mp4;base64," + base64.b64encode(f.read()).decode()
     payload = {"messages": [{"role": "user", "content": [{"type": "video_url", "video_url": {"url": url}},
@@ -151,17 +161,25 @@ def main():
     rep = post(a.base_url, payload, a.timeout)
     text = rep["choices"][0]["message"]["content"]
     parsed = parse_json_tail(text)
+    m = re.search(r"<think>(.*?)</think>", text, re.S)
+    frames = {}
+    if parsed:  # seconds in the clip -> clip frame -> source frame of the raw episode
+        for k, v in parsed.items():
+            if k.endswith("_s") and isinstance(v, (int, float)):
+                ci = min(max(int(round(v * a.fps)), 0), len(clip["source_frames"]) - 1)
+                frames[k[:-2] + "_frame"] = clip["source_frames"][ci]
     result = {"model": payload["model"], "endpoint": a.base_url, "latency_s": round(time.time() - t0, 2),
               "fps": a.fps, "temperature": a.temperature, "seed": a.seed, "prompt": prompt,
-              "parsed": parsed, "usage": rep.get("usage")}
+              "reasoning": m.group(1).strip() if m else None,
+              "parsed": parsed, "source_frames": frames, "usage": rep.get("usage")}
     rule_path = os.path.join(a.out, "transition.json")
     if parsed and os.path.exists(rule_path):
         with open(rule_path) as f:
             rule = json.load(f)
-        ms = parsed.get("manipulation_start_frame")
+        ms = frames.get("manipulation_start_frame")
         result["compare_rule_based"] = {
             "rule_entry_frame": rule["entry_frame"], "rule_contact_frame": rule["contact_frame"],
-            "cosmos_manipulation_start_frame": ms, "cosmos_contact_frame": parsed.get("contact_frame"),
+            "cosmos_manipulation_start_frame": ms, "cosmos_contact_frame": frames.get("contact_frame"),
             "entry_frame_error": None if ms is None else int(ms) - rule["entry_frame"],
             "clip_frame_spacing": round(RECORD_HZ / a.fps)}
     with open(os.path.join(cdir, "response.md"), "w") as f:
@@ -169,7 +187,7 @@ def main():
     with open(os.path.join(cdir, "result.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(text)
-    print("\n" + json.dumps({k: result.get(k) for k in ("parsed", "compare_rule_based", "latency_s")}, indent=2))
+    print("\n" + json.dumps({k: result.get(k) for k in ("parsed", "source_frames", "compare_rule_based", "latency_s")}, indent=2))
 
 
 if __name__ == "__main__":
