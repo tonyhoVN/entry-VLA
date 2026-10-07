@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Ask Cosmos 3 (Reasoner, served by vLLM with an OpenAI-compatible API) to split one
-RLBench episode into a transition phase and a manipulation phase, with its reasoning.
+RLBench episode into alternating transition / manipulation segments (any number of
+skills), with its reasoning. The prompt is deliberately generic: no cues about stops,
+gripper state or contact, so the split comes from the model's own video reasoning.
 
 Steps:
   1. ``--make-video`` builds a label-free 4 fps clip (the rate the Cosmos 3 model card
@@ -40,23 +42,21 @@ from entry_vla.data.peract2_raw import load_pickle  # noqa: E402
 VIEW_CAMERAS = ["front", "overhead", "wrist"]
 RECORD_HZ = 20  # RLBench demo frames (0.05 s step, assumed)
 
-PROMPT = """This video shows a simulated Franka Panda robot arm performing the task: "{instruction}".
-The three panels are, left to right: a front camera, an overhead camera, and a camera mounted on the robot wrist.
-The video is {duration:.2f} seconds long ({fps} fps).
+PROMPT = """The video shows a robot performing the task: "{instruction}".
+Panels, left to right: front camera, overhead camera, wrist camera. The video is {duration:.2f} seconds long.
 
-We want to split the episode into two phases:
-1. Transition phase: the arm moves through free space from its start pose toward the task-relevant object. This part could be done by a generic motion planner.
-2. Manipulation phase: starting from a pose close to and aligned with the object, the arm performs the task-specific local skill (final approach, contact, and the interaction itself).
-
-Reason step by step about the motion over time: when the arm stops traveling, where the gripper is relative to the target, what the wrist camera sees, when the gripper state changes, and when contact with the object happens.
+Split the whole video into consecutive segments of two kinds:
+- transition: the robot moves to get ready for the next skill, without interacting with objects;
+- manipulation: the robot performs a skill on an object.
+A task may contain one or several skills, so there may be several transition and manipulation segments.
 
 Answer in the following format:
 <think>
-your step-by-step reasoning, citing timestamps in seconds
+your reasoning, citing timestamps in seconds
 </think>
 
 <answer>
-{{"transition_start_s": float, "transition_end_s": float, "manipulation_start_s": float, "manipulation_end_s": float, "contact_s": float, "explanation": "short justification of the boundary"}}
+{{"segments": [{{"phase": "transition" or "manipulation", "skill": "short skill name, or null for transition", "start_s": float, "end_s": float, "explanation": "why this segment starts and ends here"}}]}}
 </answer>"""
 
 
@@ -102,13 +102,25 @@ def served_model(base_url, timeout=10):
         return json.load(r)["data"][0]["id"]
 
 
-def parse_json_tail(text):
-    for m in reversed(list(re.finditer(r"\{[^{}]*\}", text, re.S))):
+def parse_answer(text):
+    """JSON inside <answer>...</answer>, else the last parseable {...} block in the text."""
+    m = re.search(r"<answer>(.*?)</answer>", text, re.S)
+    cands = [m.group(1)] if m else []
+    cands += [text[k.start():] for k in re.finditer(r"\{", text)]  # outermost object first
+    dec = json.JSONDecoder()
+    for c in cands:
+        c = c.strip().strip("`").removeprefix("json").strip()
         try:
-            return json.loads(m.group(0))
+            return dec.raw_decode(c)[0]
         except json.JSONDecodeError:
             continue
     return None
+
+
+def to_source_frame(t, clip, fps):
+    """seconds in the clip -> clip frame -> source frame of the raw episode"""
+    ci = min(max(int(round(float(t) * fps)), 0), len(clip["source_frames"]) - 1)
+    return clip["source_frames"][ci]
 
 
 def main():
@@ -121,9 +133,13 @@ def main():
     ap.add_argument("--size", type=int, default=256, help="per-camera tile size in the clip")
     ap.add_argument("--base-url", default="http://localhost:8000/v1")
     ap.add_argument("--max-tokens", type=int, default=4096)
-    ap.add_argument("--temperature", type=float, default=0.0)
+    ap.add_argument("--temperature", type=float, default=0.6,
+                    help="greedy (0) can loop in long <think> outputs; sampling avoids that")
+    ap.add_argument("--top-p", type=float, default=0.95)
+    ap.add_argument("--repetition-penalty", type=float, default=1.05)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--timeout", type=float, default=600)
+    ap.add_argument("--run-name", default="", help="suffix for response/result files, e.g. seed1")
     ap.add_argument("--dry-run", action="store_true", help="print the request without sending it")
     a = ap.parse_args()
 
@@ -150,7 +166,8 @@ def main():
         url = "data:video/mp4;base64," + base64.b64encode(f.read()).decode()
     payload = {"messages": [{"role": "user", "content": [{"type": "video_url", "video_url": {"url": url}},
                                                           {"type": "text", "text": prompt}]}],
-               "max_tokens": a.max_tokens, "temperature": a.temperature, "seed": a.seed}
+               "max_tokens": a.max_tokens, "temperature": a.temperature, "top_p": a.top_p,
+               "repetition_penalty": a.repetition_penalty, "seed": a.seed}
     if a.dry_run:
         print(prompt)
         print(f"\nvideo payload: {len(url) / 1e6:.2f} MB base64, endpoint {a.base_url}")
@@ -160,34 +177,35 @@ def main():
     t0 = time.time()
     rep = post(a.base_url, payload, a.timeout)
     text = rep["choices"][0]["message"]["content"]
-    parsed = parse_json_tail(text)
+    parsed = parse_answer(text)
     m = re.search(r"<think>(.*?)</think>", text, re.S)
-    frames = {}
-    if parsed:  # seconds in the clip -> clip frame -> source frame of the raw episode
-        for k, v in parsed.items():
-            if k.endswith("_s") and isinstance(v, (int, float)):
-                ci = min(max(int(round(v * a.fps)), 0), len(clip["source_frames"]) - 1)
-                frames[k[:-2] + "_frame"] = clip["source_frames"][ci]
+    segments = []
+    for seg in (parsed or {}).get("segments", []):
+        try:
+            segments.append({**seg, "start_frame": to_source_frame(seg["start_s"], clip, a.fps),
+                             "end_frame": to_source_frame(seg["end_s"], clip, a.fps)})
+        except (KeyError, TypeError, ValueError):
+            segments.append({**seg, "start_frame": None, "end_frame": None})
     result = {"model": payload["model"], "endpoint": a.base_url, "latency_s": round(time.time() - t0, 2),
-              "fps": a.fps, "temperature": a.temperature, "seed": a.seed, "prompt": prompt,
-              "reasoning": m.group(1).strip() if m else None,
-              "parsed": parsed, "source_frames": frames, "usage": rep.get("usage")}
+              "fps": a.fps, "sampling": {k: payload[k] for k in ("temperature", "top_p", "repetition_penalty", "seed", "max_tokens")},
+              "finish_reason": rep["choices"][0].get("finish_reason"), "prompt": prompt,
+              "reasoning": m.group(1).strip() if m else None, "segments": segments,
+              "parse_ok": parsed is not None, "usage": rep.get("usage")}
     rule_path = os.path.join(a.out, "transition.json")
-    if parsed and os.path.exists(rule_path):
+    manip = [g for g in segments if g.get("phase") == "manipulation" and g.get("start_frame") is not None]
+    if manip and os.path.exists(rule_path):  # rule-based detector gives the first handoff only
         with open(rule_path) as f:
             rule = json.load(f)
-        ms = frames.get("manipulation_start_frame")
         result["compare_rule_based"] = {
-            "rule_entry_frame": rule["entry_frame"], "rule_contact_frame": rule["contact_frame"],
-            "cosmos_manipulation_start_frame": ms, "cosmos_contact_frame": frames.get("contact_frame"),
-            "entry_frame_error": None if ms is None else int(ms) - rule["entry_frame"],
+            "rule_entry_frame": rule["entry_frame"], "cosmos_first_manipulation_start_frame": manip[0]["start_frame"],
+            "entry_frame_error": manip[0]["start_frame"] - rule["entry_frame"],
             "clip_frame_spacing": round(RECORD_HZ / a.fps)}
-    with open(os.path.join(cdir, "response.md"), "w") as f:
+    with open(os.path.join(cdir, f"response{'_' + a.run_name if a.run_name else ''}.md"), "w") as f:
         f.write(text)
-    with open(os.path.join(cdir, "result.json"), "w") as f:
+    with open(os.path.join(cdir, f"result{'_' + a.run_name if a.run_name else ''}.json"), "w") as f:
         json.dump(result, f, indent=2)
     print(text)
-    print("\n" + json.dumps({k: result.get(k) for k in ("parsed", "source_frames", "compare_rule_based", "latency_s")}, indent=2))
+    print("\n" + json.dumps({k: result.get(k) for k in ("segments", "compare_rule_based", "finish_reason", "latency_s")}, indent=2))
 
 
 if __name__ == "__main__":
