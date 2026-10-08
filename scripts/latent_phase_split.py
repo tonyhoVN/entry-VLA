@@ -49,8 +49,9 @@ def depth_features(ep, out, cameras, grid=16, force=False):
     feats, todo = {}, []
     for cam in cameras:
         path = os.path.join(out, f"depthgrid_{cam}.npy")
-        if os.path.exists(path) and not force:
-            feats[f"depth:{cam}"] = np.load(path)
+        cached = None if force else load_npy(path)
+        if cached is not None:
+            feats[f"depth:{cam}"] = cached
         else:
             todo.append(cam)
     if not todo:
@@ -67,9 +68,24 @@ def depth_features(ep, out, cameras, grid=16, force=False):
         allv = np.concatenate([d[v] for d, v in zip(ds, vs)])
         lo, hi = (np.percentile(allv, [1, 99]) if len(allv) else (near, far))
         f = np.stack([depth_grid(d, v, lo, hi, grid) for d, v in zip(ds, vs)]).astype(np.float32)
-        np.save(os.path.join(out, f"depthgrid_{cam}.npy"), f)
+        save_npy(os.path.join(out, f"depthgrid_{cam}.npy"), f)
         feats[f"depth:{cam}"] = f
     return feats
+
+
+def save_npy(path, arr):
+    """Atomic save: an interrupted run never leaves a truncated cache file."""
+    tmp = path + ".tmp.npy"
+    np.save(tmp, arr)
+    os.replace(tmp, path)
+
+
+def load_npy(path):
+    """Cached array, or None if missing/unreadable (then it is recomputed)."""
+    try:
+        return np.load(path) if os.path.exists(path) else None
+    except (EOFError, ValueError, OSError):
+        return None
 
 
 def n_frames(ep):
@@ -80,13 +96,14 @@ def embed_episode(encoder, ep, out, cameras, force=False):
     embs = {}
     for cam in cameras:
         path = os.path.join(out, f"embeddings_{cam}.npy")
-        if os.path.exists(path) and not force:
-            embs[cam] = np.load(path)
+        cached = None if force else load_npy(path)
+        if cached is not None:
+            embs[cam] = cached
             continue
         imgs = [np.asarray(Image.open(os.path.join(ep, f"{cam}_rgb", f"rgb_{i:04d}.png")).convert("RGB"))
                 for i in range(n_frames(ep))]
         embs[cam] = encoder.encode(imgs).astype(np.float32)
-        np.save(path, embs[cam])
+        save_npy(path, embs[cam])
     return embs
 
 
@@ -168,8 +185,10 @@ def main():
         cache = os.path.join(ep_out, "latent")  # reuse embeddings cached by earlier runs
         for cam in ALL_CAMERAS:
             src, dst = os.path.join(cache, f"embeddings_{cam}.npy"), os.path.join(lat_out, f"embeddings_{cam}.npy")
-            if lat_out != cache and os.path.exists(src) and not os.path.exists(dst) and not a.force:
-                np.save(dst, np.load(src))
+            if lat_out != cache and not a.force and load_npy(dst) is None:
+                arr = load_npy(src)
+                if arr is not None:
+                    save_npy(dst, arr)
         embs = embed_episode(enc, ep, lat_out, ALL_CAMERAS, a.force)
         depth_cams = sorted({c.split(":", 1)[1] for v in VIEW_SETS.values() for c in v if c.startswith("depth:")})
         embs.update(depth_features(ep, lat_out, depth_cams, a.depth_grid, a.force))
