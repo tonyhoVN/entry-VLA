@@ -66,7 +66,7 @@ def draw(ax, Y, bounds, title, small=False):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True, help="processed root with <episode>/latent/")
-    ap.add_argument("--view", default="wrist", choices=["exo", "wrist", "all"])
+    ap.add_argument("--view", default="wrist", help="view set name in latent_split.json (exo|wrist|all|fow)")
     ap.add_argument("--method", default="k3", choices=["k2", "k3", "novelty"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--latent-dir", default="latent")

@@ -31,7 +31,8 @@ from entry_vla.perception.latent_split import (first_boundary, novelty_curve, no
                                                optimal_segmentation, standardise)
 
 ALL_CAMERAS = ["front", "over_shoulder_left", "over_shoulder_right", "overhead", "wrist"]
-VIEW_SETS = {"exo": ["front", "over_shoulder_left"], "wrist": ["wrist"], "all": ALL_CAMERAS}
+VIEW_SETS = {"exo": ["front", "over_shoulder_left"], "wrist": ["wrist"], "all": ALL_CAMERAS,
+             "fow": ["front", "overhead", "wrist"]}
 
 
 def n_frames(ep):
@@ -126,6 +127,11 @@ def main():
         lat_out = os.path.join(ep_out, a.latent_dir)
         os.makedirs(lat_out, exist_ok=True)
         t1 = time.time()
+        cache = os.path.join(ep_out, "latent")  # reuse embeddings cached by earlier runs
+        for cam in ALL_CAMERAS:
+            src, dst = os.path.join(cache, f"embeddings_{cam}.npy"), os.path.join(lat_out, f"embeddings_{cam}.npy")
+            if lat_out != cache and os.path.exists(src) and not os.path.exists(dst) and not a.force:
+                np.save(dst, np.load(src))
         embs = embed_episode(enc, ep, lat_out, ALL_CAMERAS, a.force)
         splits = split_episode(embs, a.k3_min_len, a.window)
         refs = references(ep_out, a.perception_radius)
