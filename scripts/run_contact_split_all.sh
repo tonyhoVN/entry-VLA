@@ -41,7 +41,7 @@ for f in sorted(glob.glob(os.path.join(root, "*", "variation*", "episode*", sub,
     j = json.load(open(f)); r = j["references"]
     task, var, ep = f.split(os.sep)[-5:-2]
     rows.append({"task": task, "variation": var, "episode": ep, "num_frames": j["num_frames"],
-                 "first_contact_onset": j["first_contact_onset"], "n_intervals": len(j["contact_intervals"]),
+                 "first_contact_onset": j["first_contact_onset"], "split_frame": j.get("split_frame"), "n_intervals": len(j["contact_intervals"]),
                  "object_motion_onset": r["object_motion_onset"], "touch_force_onset": r["touch_force_onset"],
                  "onset_minus_object_motion": j["onset_minus_object_motion"]})
 out = os.path.join(root, f"{sub}_summary.csv")

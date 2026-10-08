@@ -24,3 +24,12 @@ def test_close_counts():
     env = np.array([[0.01, 0, 0], [0.012, 0, 0], [0.5, 0, 0]])
     assert close_counts(hand, env, 0.015) == (2, 0.01)
     assert close_counts(np.zeros((0, 3)), env, 0.015)[0] == 0
+
+
+def test_phases_pre_frames_shift_and_clamp():
+    from entry_vla.perception.contact import phases_from_contacts
+    p = phases_from_contacts([(10, 20)], 30, "first", pre=5)
+    assert p[1]["start"] == 5 and p[0]["end"] == 4
+    assert phases_from_contacts([(3, 20)], 30, "first", pre=5)[0]["phase"] == "contact_onward"
+    p = phases_from_contacts([(5, 8), (10, 20)], 30, "all", pre=5)
+    assert [x["start"] for x in p] == [0, 8, 20]

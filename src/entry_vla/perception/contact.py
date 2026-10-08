@@ -44,9 +44,17 @@ def contact_intervals(flags: Sequence[bool], min_len: int = 2, merge_gap: int = 
     return [(s, e) for s, e in merged if e - s >= min_len]
 
 
-def phases_from_contacts(intervals: Sequence[Tuple[int, int]], T: int, mode: str = "first") -> List[Dict]:
+def phases_from_contacts(intervals: Sequence[Tuple[int, int]], T: int, mode: str = "first",
+                         pre: int = 0) -> List[Dict]:
     """Phase list. ``first``: [free motion | from first contact onset]; ``all``: alternating
-    free / contact segments at every onset and offset."""
+    free / contact segments at every onset and offset. ``pre`` moves every onset ``pre`` frames earlier
+    (clamped to 0 and to the previous interval's end), so a contact phase starts before the contact."""
+    if pre:
+        shifted, prev = [], 0
+        for s, e in intervals:
+            shifted.append((max(prev, s - pre), e))
+            prev = e
+        intervals = shifted
     if not intervals:
         return [{"phase": "free", "start": 0, "end": T - 1}]
     if mode == "first":

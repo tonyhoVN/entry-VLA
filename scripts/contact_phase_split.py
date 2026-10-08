@@ -7,10 +7,12 @@ Per frame t:
             hand-sized box in the TCP frame of frame t      -> the end-effector, not the arm
   env(t)  = all other valid depth points (objects, table, scene)
   n_close(t) = #env points within --eps of hand(t); d_min(t) = min hand-env distance
-  contact(t) = n_close(t) >= --k
+  contact(t) = n_close(t) >= --k, OR finger touch force > --force-eps (gripper contact; --no-gripper-touch
+               disables it)
 Contact frames -> intervals (--merge-gap, --min-len) -> phases (--mode first: free | contact onward;
---mode all: alternating free/contact). Saved for comparison, NOT used for the split: object motion
-(task_low_dim_state change), finger touch force, joint-force norm.
+--mode all: alternating free/contact). Each phase boundary is placed --pre-frames frames before the
+contact onset (default 5). Saved for comparison, NOT used for the split: object motion
+(task_low_dim_state change), joint-force norm.
 
 Outputs in <out>/contact/: contact.json, contact_curve.csv, contact_curve.png, phase<i>_<a>-<b>.mp4.
 Robot ids come from privileged mask images, so this is an annotation/oracle tool.
@@ -47,7 +49,7 @@ def first_true(x):
     return int(i[0]) if len(i) else None
 
 
-def plot_curves(path, rows, intervals, refs, eps, k):
+def plot_curves(path, rows, intervals, refs, eps, k, split=None):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -56,6 +58,8 @@ def plot_curves(path, rows, intervals, refs, eps, k):
     for ax in (a1, a2):
         ax.set_facecolor("#fcfcfb")
         for s, e in intervals:
+            if split is not None:
+                ax.axvline(split, color="#eb6834", ls="-.", lw=1)
             ax.axvspan(s, e - 1, color="#eb6834", alpha=0.12, lw=0)
         for name, f, ls in (("object moves", refs.get("object_motion_onset"), "--"),
                             ("touch force", refs.get("touch_force_onset"), ":")):
@@ -74,7 +78,7 @@ def plot_curves(path, rows, intervals, refs, eps, k):
     a2.set_ylabel("#env points\nwithin eps")
     a2.set_xlabel("frame")
     on = first_onset(intervals)
-    a1.set_title(f"End-effector contact (shaded = contact intervals), first onset {on}\n"
+    a1.set_title(f"End-effector contact (shaded; geometric or finger touch), first onset {on}, split dash-dot\n"
                  f"dashed = object starts moving ({refs.get('object_motion_onset')}), "
                  f"dotted = finger touch force ({refs.get('touch_force_onset')})", fontsize=9, loc="left",
                  color="#0b0b0b")
@@ -93,7 +97,9 @@ def main():
     ap.add_argument("--merge-gap", type=int, default=2)
     ap.add_argument("--mode", default="first", choices=["first", "all"])
     ap.add_argument("--state-eps", type=float, default=1e-3, help="object motion threshold for the reference")
-    ap.add_argument("--force-eps", type=float, default=0.02, help="touch force threshold for the reference")
+    ap.add_argument("--force-eps", type=float, default=0.02, help="finger touch force threshold (N) for gripper contact")
+    ap.add_argument("--no-gripper-touch", action="store_true", help="geometric contact only, ignore touch force")
+    ap.add_argument("--pre-frames", type=int, default=5, help="split this many frames before contact onset")
     ap.add_argument("--subdir", default="contact", help="output subdir of --out")
     ap.add_argument("--no-video", action="store_true")
     ap.add_argument("--video-fps", type=int, default=20)
@@ -122,11 +128,13 @@ def main():
     for t in range(T):
         hand, env = hand_and_env_points(a.episode, obs[t], t, rid)
         n, dmin = close_counts(hand, env, a.eps)
+        geo = n >= a.k
+        grip = (not a.no_gripper_touch) and touch[t] > a.force_eps
         rows.append({"frame": t, "n_hand_pts": len(hand), "n_close": n, "d_min_m": round(dmin, 5),
-                     "contact": int(n >= a.k), "object_state_change": round(float(dstate[t]), 5),
+                     "geometric_contact": int(geo), "gripper_contact": int(grip), "contact": int(geo or grip), "object_state_change": round(float(dstate[t]), 5),
                      "touch_force": round(float(touch[t]), 4), "joint_force_norm": round(float(jforce[t]), 2)})
     intervals = contact_intervals([r["contact"] for r in rows], a.min_len, a.merge_gap)
-    phases = phases_from_contacts(intervals, T, a.mode)
+    phases = phases_from_contacts(intervals, T, a.mode, a.pre_frames)
     onset = first_onset(intervals)
     with open(os.path.join(out, "contact_curve.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -134,15 +142,18 @@ def main():
         w.writerows(rows)
     summary = {"format": "entry_vla.contact_phase_split/1", "episode": os.path.abspath(a.episode),
                "instruction": load_pickle(os.path.join(a.episode, "variation_descriptions.pkl"))[0],
-               "num_frames": T, "params": {k: getattr(a, k) for k in ("eps", "k", "min_len", "merge_gap", "mode")},
+               "num_frames": T, "params": {k: getattr(a, k) for k in ("eps", "k", "min_len", "merge_gap", "mode", "pre_frames",
+                                                     "force_eps", "no_gripper_touch")},
                "robot_ids": sorted(rid), "robot_id_frames": frames,
                "contact_intervals": [list(map(int, i)) for i in intervals], "first_contact_onset": onset,
+               "split_frame": phases[1]["start"] if len(phases) > 1 else None,
                "phases": phases, "references": refs,
                "onset_minus_object_motion": None if onset is None or t_obj is None else onset - t_obj,
                "note": "geometric contact of end-effector RGB-D points with environment points; robot ids from "
                        "simulator masks (privileged); references are not used for the split"}
     json.dump(summary, open(os.path.join(out, "contact.json"), "w"), indent=1)
-    plot_curves(os.path.join(out, "contact_curve.png"), rows, intervals, refs, a.eps, a.k)
+    plot_curves(os.path.join(out, "contact_curve.png"), rows, intervals, refs, a.eps, a.k,
+                phases[1]["start"] if len(phases) > 1 else None)
     if not a.no_video:
         from detect_transition_rlbench import tile, write_video
         for old in (f for f in os.listdir(out) if f.startswith("phase") and f.endswith(".mp4")):
@@ -151,7 +162,7 @@ def main():
             write_video(os.path.join(out, f"phase{i}_{p['phase']}_{p['start']:03d}-{p['end']:03d}.mp4"),
                         [tile(a.episode, t, f"{i}/{len(phases)} {p['phase']} (contact split)", 1)
                          for t in range(p["start"], p["end"] + 1)], a.video_fps)
-    print(json.dumps({k: summary[k] for k in ("contact_intervals", "first_contact_onset", "phases", "references",
+    print(json.dumps({k: summary[k] for k in ("contact_intervals", "first_contact_onset", "split_frame", "phases", "references",
                                               "onset_minus_object_motion")}, indent=1))
     print(f"done in {time.time() - t0:.1f}s")
 
