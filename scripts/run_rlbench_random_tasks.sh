@@ -79,14 +79,15 @@ for p in sorted(glob.glob(os.path.join(root, "*", "variation*", "episode*", "per
     task = p.split(os.sep)[-5]
     labels = {c: (v["detection"] or {}).get("label") for c, v in d["per_camera"].items()}
     rows.append({"task": task, "instruction": d["instruction"], "frames": d["num_frames"],
-                 "start_r0.20": d["pred_start_at_baseline"],
+                 "radius_m": d["baseline_radius_m"], "start": d["pred_start_at_baseline"],
                  "start_r0.08": next(r["pred_start"] for r in d["radius_sweep"] if abs(r["radius_m"] - 0.08) < 1e-9),
                  "gripper_toggles": d["other_references"].get("gripper_toggle_frames"),
                  "arm_stops": d["other_references"].get("arm_stop_frames"), "detected": labels})
 json.dump(rows, open(os.path.join(root, "summary.json"), "w"), indent=2)
-print(f"\n{'task':32s} {'frames':>6s} {'R=.20':>6s} {'R=.08':>6s}  gripper toggles / arm stops / detected object")
+print(f"\nstart = split at the --radius used ({rows[0]['radius_m'] if rows else '-'} m)")
+print(f"{'task':32s} {'frames':>6s} {'start':>6s} {'R=.08':>6s}  gripper toggles / arm stops / detected object")
 for r in rows:
-    print(f"{r['task']:32s} {r['frames']:6d} {str(r['start_r0.20']):>6s} {str(r['start_r0.08']):>6s}  "
+    print(f"{r['task']:32s} {r['frames']:6d} {str(r['start']):>6s} {str(r['start_r0.08']):>6s}  "
           f"{r['gripper_toggles']} / {r['arm_stops']} / {sorted(set(r['detected'].values()), key=str)}")
 EOF
 echo "== done: $OUT_ROOT/{tasks.txt,status.tsv,summary.json}"
