@@ -171,7 +171,7 @@ def main():
     ap.add_argument("--attn-alpha", type=float, default=0.5)
     ap.add_argument("--attn-iters", type=int, default=1)
     ap.add_argument("--force", action="store_true", help="recompute cached embeddings")
-    ap.add_argument("--video-split", default="wrist:k3", help="view:method for phase videos (k2|k3|novelty); 'none' skips")
+    ap.add_argument("--video-split", default="wrist:k2", help="view:method for phase videos (k2|k3|novelty); 'none' skips")
     ap.add_argument("--video-fps", type=int, default=20)
     a = ap.parse_args()
 

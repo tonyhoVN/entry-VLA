@@ -238,7 +238,7 @@ Outputs:
 - `episode<N>/latent/latent_split.json`: the boundaries for every view set and detector, the novelty curves and the
   references.
 - `episode<N>/latent/phase<i>_<start>-<end>.mp4`: one video per phase, all 5 cameras with RGB above depth, cut at
-  `--video-split` (default `wrist:k3`). Use `exo:k2`, `all:novelty`, … to change it, or `none` to skip videos.
+  `--video-split` (default `wrist:k2`, 2 phases). Use `exo:k2`, `all:novelty`, … to change it, or `none` to skip videos.
 - `latent_summary.csv`: one row per episode.
 - `latent_summary.json`: error of each detector against each reference (mean, |mean|, median, share within 5
   frames).
@@ -247,13 +247,13 @@ Outputs:
 
 ```bash
 nohup python scripts/plot_latent_tsne.py --out data/entry_process/push_button_seed42/variation4 \
-  --view wrist --method k3 > data/entry_process/push_button_seed42/variation4/tsne_run.log 2>&1 &
+  --view wrist --method k2 > data/entry_process/push_button_seed42/variation4/tsne_run.log 2>&1 &
 ```
 
 Outputs:
-- `episode<N>/latent/tsne_wrist_k3.png`: each frame is a point coloured by phase. Clusters are named
+- `episode<N>/latent/tsne_wrist_k2.png`: each frame is a point coloured by phase. Clusters are named
   "phase i: frame a → frame b", a grey line shows time order, and a ring marks the first frame.
-- `latent_tsne_overview_wrist_k3.png`: all episodes as small multiples.
+- `latent_tsne_overview_wrist_k2.png`: all episodes as small multiples.
 
 t-SNE preserves neighbourhoods, not distances. Read it as "do the phases form separate groups", not "how far apart
 are they". `--seed` fixes the layout.
