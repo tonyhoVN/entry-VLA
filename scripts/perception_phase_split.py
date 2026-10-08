@@ -34,8 +34,8 @@ from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from entry_vla.data.peract2_raw import demo_observations, load_pickle  # noqa: E402
 from entry_vla.geometry.camera import project_world  # noqa: E402
-from entry_vla.perception.distance import (distance_to_points, object_points, radius_sweep,  # noqa: E402
-                                           remove_outliers)
+from entry_vla.perception.distance import (distance_to_points, fuse_voxel, object_points,  # noqa: E402
+                                           radius_sweep)
 from entry_vla.sim.peract2 import camera_from_misc  # noqa: E402
 
 RADII = [0.05, 0.08, 0.10, 0.15, 0.20, 0.25, 0.30]
@@ -104,6 +104,7 @@ def main():
     ap.add_argument("--vlm", default="Qwen/Qwen3-VL-4B-Instruct")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--erode", type=int, default=1)
+    ap.add_argument("--voxel", type=float, default=0.005, help="Open3D voxel size (m) for the fused object cloud")
     ap.add_argument("--no-phase-videos", action="store_true", help="skip transition/manipulation phase videos")
     ap.add_argument("--video-fps", type=int, default=20)
     ap.add_argument("--episodes-root", default=None,
@@ -214,7 +215,7 @@ def run_episode(a, episode, out, grounder, segmenter, t_load):
             "mask_iou_vs_reference": iou(pred, ref) if has_ref else None, "pred_points": len(p), "ref_points": len(r),
             "inference_s": round(t_inf, 2)}
 
-    pred_cloud = remove_outliers(np.concatenate(pred_pts)) if pred_pts else np.zeros((0, 3))
+    pred_cloud = fuse_voxel(pred_pts, a.voxel)
     ref_cloud = np.concatenate(ref_pts)
     if has_ref and len(ref_cloud) == 0:
         raise RuntimeError(f"{episode}: no reference object pixels in {a.cameras}; check --target-slice/--cameras")

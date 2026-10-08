@@ -31,12 +31,17 @@ def object_points(depth: np.ndarray, valid: np.ndarray, mask: np.ndarray, K: np.
     return backproject_to_world(depth, K, T_WC, m) if m.any() else np.zeros((0, 3))
 
 
-def remove_outliers(points: np.ndarray, max_dist: float = 0.15) -> np.ndarray:
-    """Drop points farther than ``max_dist`` from the per-axis median (segmentation leaks)."""
-    if len(points) == 0:
-        return points
-    c = np.median(points, axis=0)
-    return points[np.linalg.norm(points - c, axis=1) <= max_dist]
+def fuse_voxel(clouds: Sequence[np.ndarray], voxel_size: float = 0.005) -> np.ndarray:
+    """Concatenate per-camera world clouds and voxel-grid downsample them with Open3D.
+    No outlier or median filtering: a task may involve several objects, and all segmented
+    surface points are kept (one averaged point per occupied voxel)."""
+    pts = [np.asarray(c, dtype=np.float64).reshape(-1, 3) for c in clouds]
+    pts = np.concatenate(pts) if pts else np.zeros((0, 3))
+    if len(pts) == 0 or voxel_size <= 0:
+        return pts
+    import open3d as o3d
+    pcd = o3d.geometry.PointCloud(o3d.utility.Vector3dVector(pts))
+    return np.asarray(pcd.voxel_down_sample(voxel_size).points)
 
 
 def distance_to_points(queries: np.ndarray, points: np.ndarray, chunk: int = 4096) -> np.ndarray:

@@ -17,6 +17,7 @@ test = ["pytest>=6"]
 train = ["torch>=2.1"]
 io = ["pyarrow>=12", "pillow>=9"]
 viz = ["matplotlib>=3.5", "pillow>=9"]
+perception = ["open3d>=0.18", "opencv-python-headless>=4.8", "pillow>=9"]   # Qwen3-VL/SAM need transformers+torch (train env)
 
 [project.scripts]
 entry-vla = "entry_vla.cli.main:main"

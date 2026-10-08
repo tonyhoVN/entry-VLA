@@ -1,7 +1,8 @@
 import numpy as np
+import pytest
 
-from entry_vla.perception.distance import (distance_to_points, first_within, object_points, radius_sweep,
-                                           remove_outliers)
+from entry_vla.perception.distance import (distance_to_points, first_within, fuse_voxel, object_points,
+                                           radius_sweep)
 from entry_vla.perception.grounding import parse_boxes
 
 
@@ -26,9 +27,15 @@ def test_distance_and_radius_rule():
     assert np.isinf(distance_to_points(q, np.zeros((0, 3)))).all()
 
 
-def test_remove_outliers_drops_leak():
-    pts = np.vstack([np.random.default_rng(0).normal(0, 0.01, (50, 3)), [[1.0, 1.0, 1.0]]])
-    assert len(remove_outliers(pts, 0.15)) == 50
+def test_fuse_voxel_keeps_separate_objects():
+    pytest.importorskip("open3d")
+    rng = np.random.default_rng(0)
+    obj_a = rng.uniform(0, 0.02, (400, 3))                      # big object, dense
+    obj_b = np.array([1.0, 0.0, 0.0]) + rng.uniform(0, 0.01, (20, 3))  # small object far away
+    fused = fuse_voxel([obj_a, obj_b], voxel_size=0.005)
+    assert len(fused) < 420
+    assert (np.linalg.norm(fused - [1.0, 0, 0], axis=1) < 0.02).any()  # small object kept
+    assert np.allclose(fuse_voxel([obj_a], voxel_size=0), obj_a)
 
 
 def test_parse_qwen3_relative_boxes():
