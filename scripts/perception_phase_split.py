@@ -99,7 +99,7 @@ def main():
     ap.add_argument("--cameras", nargs="+", default=["front", "over_shoulder_left"], help="exo cameras")
     ap.add_argument("--frame", type=int, default=0, help="frame used for detection/segmentation (object static)")
     ap.add_argument("--target-slice", default="0:3", help="true object position in task_low_dim_state (reference only); 'none' skips the reference")
-    ap.add_argument("--radius", type=float, default=0.20)
+    ap.add_argument("--radius", type=float, default=0.10, help="phase split / video boundary radius (m); must be in RADII")
     ap.add_argument("--segmenter", default="sam2.1")
     ap.add_argument("--vlm", default="Qwen/Qwen3-VL-4B-Instruct")
     ap.add_argument("--device", default="cuda:0")
