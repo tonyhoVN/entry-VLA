@@ -115,3 +115,25 @@ def standardise(X: np.ndarray) -> np.ndarray:
 
 def first_boundary(bounds: Sequence[int]) -> Optional[int]:
     return int(bounds[0]) if len(bounds) else None
+
+
+def depth_grid(depth: np.ndarray, valid: np.ndarray, lo: float, hi: float, grid: int = 16) -> np.ndarray:
+    """Metric depth (H, W) -> normalised (grid*grid,) feature: (d - lo) / (hi - lo) clipped to [0, 1],
+    invalid / far-plane pixels set to 1, then area-averaged to a grid x grid map."""
+    d = np.clip((np.asarray(depth, dtype=np.float64) - lo) / max(hi - lo, 1e-6), 0.0, 1.0)
+    d[~np.asarray(valid, bool)] = 1.0
+    H, W = d.shape
+    ys = np.linspace(0, H, grid + 1).astype(int)
+    xs = np.linspace(0, W, grid + 1).astype(int)
+    return np.array([[d[ys[i]:ys[i + 1], xs[j]:xs[j + 1]].mean() for j in range(grid)] for i in range(grid)]).ravel()
+
+
+def build_trajectory(blocks: Sequence[np.ndarray], balance: bool = False) -> np.ndarray:
+    """Concatenate per-frame feature blocks (each (T, d_b)) after per-episode standardisation.
+    With ``balance`` every block is divided by sqrt(d_b) so each block (camera x modality)
+    contributes the same total variance regardless of its dimensionality."""
+    out = []
+    for B in blocks:
+        Z = standardise(B)
+        out.append(Z / np.sqrt(Z.shape[1]) if balance else Z)
+    return np.concatenate(out, axis=1)

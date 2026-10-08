@@ -27,12 +27,49 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from entry_vla.perception.latent_split import (first_boundary, novelty_curve, novelty_peaks,  # noqa: E402
-                                               optimal_segmentation, standardise)
+from entry_vla.data.peract2_raw import demo_observations, load_pickle  # noqa: E402
+from entry_vla.geometry.camera import decode_depth, valid_depth_mask  # noqa: E402
+from entry_vla.perception.latent_split import (build_trajectory, depth_grid, first_boundary,  # noqa: E402
+                                               novelty_curve, novelty_peaks, optimal_segmentation)
 
 ALL_CAMERAS = ["front", "over_shoulder_left", "over_shoulder_right", "overhead", "wrist"]
 VIEW_SETS = {"exo": ["front", "over_shoulder_left"], "wrist": ["wrist"], "all": ALL_CAMERAS,
-             "fow": ["front", "overhead", "wrist"]}
+             "fow": ["front", "overhead", "wrist"],
+             # RGB embeddings + normalised 16x16 depth grids; blocks balanced (each / sqrt(dim))
+             "fow_depth": ["front", "overhead", "wrist", "depth:front", "depth:overhead", "depth:wrist"]}
+
+
+def is_balanced(cams):
+    return any(c.startswith("depth:") for c in cams)
+
+
+def depth_features(ep, out, cameras, grid=16, force=False):
+    """Per camera: decode the RLBench depth buffer to metres (near/far from obs.misc), normalise with
+    the camera's 1st-99th percentile depth over the episode, pool to grid x grid. Cached."""
+    feats, todo = {}, []
+    for cam in cameras:
+        path = os.path.join(out, f"depthgrid_{cam}.npy")
+        if os.path.exists(path) and not force:
+            feats[f"depth:{cam}"] = np.load(path)
+        else:
+            todo.append(cam)
+    if not todo:
+        return feats
+    misc = demo_observations(load_pickle(os.path.join(ep, "low_dim_obs.pkl")))[0].misc
+    for cam in todo:
+        near, far = float(misc[f"{cam}_camera_near"]), float(misc[f"{cam}_camera_far"])
+        ds, vs = [], []
+        for i in range(n_frames(ep)):
+            raw = np.asarray(Image.open(os.path.join(ep, f"{cam}_depth", f"depth_{i:04d}.png")).convert("RGB"))
+            d = decode_depth(raw, "rgb24_linear_buffer", near=near, far=far)
+            ds.append(d)
+            vs.append(valid_depth_mask(d, near=near, far=far))
+        allv = np.concatenate([d[v] for d, v in zip(ds, vs)])
+        lo, hi = (np.percentile(allv, [1, 99]) if len(allv) else (near, far))
+        f = np.stack([depth_grid(d, v, lo, hi, grid) for d, v in zip(ds, vs)]).astype(np.float32)
+        np.save(os.path.join(out, f"depthgrid_{cam}.npy"), f)
+        feats[f"depth:{cam}"] = f
+    return feats
 
 
 def n_frames(ep):
@@ -73,7 +110,7 @@ def split_episode(embs, k3_min_len, window):
     for name, cams in VIEW_SETS.items():
         if not all(c in embs for c in cams):
             continue
-        X = standardise(np.concatenate([embs[c] for c in cams], axis=1))
+        X = build_trajectory([embs[c] for c in cams], balance=is_balanced(cams))
         nov = novelty_curve(X, window)
         res[name] = {"k2": first_boundary(optimal_segmentation(X, 2)),
                      "k3": optimal_segmentation(X, 3, min_len=k3_min_len),
@@ -108,6 +145,7 @@ def main():
     ap.add_argument("--max-episodes", type=int, default=None)
     ap.add_argument("--episodes", nargs="+", default=None, help="only these episode dirs, e.g. episode0")
     ap.add_argument("--latent-dir", default="latent", help="per-episode output subdir")
+    ap.add_argument("--depth-grid", type=int, default=16, help="depth feature grid size per camera")
     ap.add_argument("--force", action="store_true", help="recompute cached embeddings")
     ap.add_argument("--video-split", default="wrist:k3", help="view:method for phase videos (k2|k3|novelty); 'none' skips")
     ap.add_argument("--video-fps", type=int, default=20)
@@ -133,10 +171,12 @@ def main():
             if lat_out != cache and os.path.exists(src) and not os.path.exists(dst) and not a.force:
                 np.save(dst, np.load(src))
         embs = embed_episode(enc, ep, lat_out, ALL_CAMERAS, a.force)
+        depth_cams = sorted({c.split(":", 1)[1] for v in VIEW_SETS.values() for c in v if c.startswith("depth:")})
+        embs.update(depth_features(ep, lat_out, depth_cams, a.depth_grid, a.force))
         splits = split_episode(embs, a.k3_min_len, a.window)
         refs = references(ep_out, a.perception_radius)
         summary = {"format": "entry_vla.latent_phase_split/1", "episode": os.path.abspath(ep), "encoder": a.encoder,
-                   "num_frames": int(len(next(iter(embs.values())))), "view_sets": VIEW_SETS, "window": a.window,
+                   "num_frames": int(len(embs["front"])), "view_sets": VIEW_SETS, "window": a.window,
                    "splits": splits, "references": refs,
                    "note": "unsupervised change points in DINOv2 CLS space; references are not human labels"}
         with open(os.path.join(lat_out, "latent_split.json"), "w") as f:

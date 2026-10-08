@@ -29,3 +29,18 @@ def test_novelty_peak_at_change():
     nov = novelty_curve(X, window=5)
     assert novelty_peaks(nov, 1) == [40]
     assert nov[:5].sum() == 0
+
+
+def test_depth_grid_and_balanced_blocks():
+    from entry_vla.perception.latent_split import build_trajectory, depth_grid
+    d = np.full((32, 32), 1.0)
+    d[:16] = 0.5
+    valid = np.ones_like(d, bool)
+    valid[:, -1] = False
+    g = depth_grid(d, valid, lo=0.5, hi=1.5, grid=2)
+    assert g.shape == (4,) and np.allclose(g[:2], [0.0, 1 / 16]) and np.allclose(g[2:], [0.5, 0.5 + 0.5 / 16])
+    rng = np.random.default_rng(0)
+    a, b = rng.normal(size=(50, 384)), rng.normal(size=(50, 16))
+    X = build_trajectory([a, b], balance=True)
+    assert X.shape == (50, 400)
+    assert np.isclose((X[:, :384] ** 2).sum(), (X[:, 384:] ** 2).sum())  # equal total variance per block

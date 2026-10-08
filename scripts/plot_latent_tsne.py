@@ -17,7 +17,7 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-from entry_vla.perception.latent_split import standardise  # noqa: E402
+from entry_vla.perception.latent_split import build_trajectory  # noqa: E402
 
 # Categorical slots 1..7 of the dataviz reference palette (light surface), fixed order.
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#4a3aa7"]
@@ -87,7 +87,9 @@ def main():
         lat = os.path.join(a.out, d, a.latent_dir)
         split = json.load(open(os.path.join(lat, "latent_split.json")))
         cams = split["view_sets"][a.view]
-        X = standardise(np.concatenate([np.load(os.path.join(lat, f"embeddings_{c}.npy")) for c in cams], axis=1))
+        blocks = [np.load(os.path.join(lat, f"depthgrid_{c[6:]}.npy" if c.startswith("depth:") else f"embeddings_{c}.npy"))
+                  for c in cams]
+        X = build_trajectory(blocks, balance=any(c.startswith("depth:") for c in cams))
         Y = tsne_2d(X, a.seed)
         np.save(os.path.join(lat, f"tsne_{a.view}.npy"), Y)
         bounds = phase_bounds(split, a.view, a.method)
