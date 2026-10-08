@@ -104,6 +104,8 @@ def main():
     ap.add_argument("--vlm", default="Qwen/Qwen3-VL-4B-Instruct")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--erode", type=int, default=1)
+    ap.add_argument("--no-phase-videos", action="store_true", help="skip transition/manipulation phase videos")
+    ap.add_argument("--video-fps", type=int, default=20)
     ap.add_argument("--episodes-root", default=None,
                     help="process every episode*/ under this dir (models loaded once); --out is then a root")
     ap.add_argument("--max-episodes", type=int, default=None)
@@ -269,7 +271,24 @@ def run_episode(a, episode, out, grounder, segmenter, t_load):
                           "privileged and not a human phase label"}
     with open(os.path.join(out, "comparison.json"), "w") as f:
         json.dump(summary, f, indent=2)
+    if not a.no_phase_videos:
+        write_phase_videos(episode, out, summary["pred_start_at_baseline"], len(obs), a.radius, a.video_fps)
     return summary
+
+
+def write_phase_videos(episode, out, start, n, radius, fps):
+    """transition_phase.mp4 = frames [0, start), manipulation_phase.mp4 = [start, n): all cameras,
+    RGB row over depth row (detect_transition_rlbench.tile). No split -> nothing written."""
+    if start is None:
+        return
+    sys.path.insert(0, os.path.dirname(__file__))
+    from detect_transition_rlbench import tile, write_video
+    tag = f"R={radius:.2f} m"
+    if start > 0:
+        write_video(os.path.join(out, "transition_phase.mp4"),
+                    [tile(episode, i, f"transition ({tag})", 1) for i in range(0, start)], fps)
+    write_video(os.path.join(out, "manipulation_phase.mp4"),
+                [tile(episode, i, f"manipulation ({tag})", 1) for i in range(start, n)], fps)
 
 
 
