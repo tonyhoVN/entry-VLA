@@ -26,52 +26,15 @@ from PIL import Image
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from entry_vla.data.peract2_raw import demo_observations, load_pickle  # noqa: E402
-from entry_vla.geometry.camera import backproject_to_world, project_world  # noqa: E402
+from entry_vla.geometry.camera import project_world  # noqa: E402
 from entry_vla.geometry.transforms import apply_T, pose_to_T  # noqa: E402
-from entry_vla.sim.peract2 import camera_from_misc  # noqa: E402
+from entry_vla.perception.rlbench_scene import (EXO_CAMERAS, hand_and_env_points, load_cam,  # noqa: E402
+                                                robot_ids)
 
 START_C, ENTRY_C = (42, 120, 214), (235, 104, 52)       # categorical slots 1 / 2 (blue = frame 0, orange = entry)
 AXIS_C = {"X": (214, 39, 40), "Y": (44, 160, 44), "Z": (31, 119, 180)}  # conventional RGB frame axes
 SURFACE, INK = "#fcfcfb", "#0b0b0b"
-EXO = ("front", "overhead", "over_shoulder_left", "over_shoulder_right")
-
-
-def load_cam(ep, misc, cam, i):
-    rgb = np.asarray(Image.open(os.path.join(ep, f"{cam}_rgb", f"rgb_{i:04d}.png")).convert("RGB"))
-    d = np.asarray(Image.open(os.path.join(ep, f"{cam}_depth", f"depth_{i:04d}.png")).convert("RGB"))
-    m = np.asarray(Image.open(os.path.join(ep, f"{cam}_mask", f"mask_{i:04d}.png")).convert("RGB"))
-    ids = m.astype(np.int64) @ np.array([1, 256, 65536])
-    return camera_from_misc(cam, misc, rgb, d, "rgb24_linear_buffer"), ids
-
-
-def robot_ids(ep, obs, e, move_thresh=0.02, min_pts=20, max_pts=4000):
-    """Mask ids of robot links that moved between frame 0 and the entry frame. Each id's pixels in all exo
-    cameras are back-projected to world points in both frames; an id moved if the median distance from its
-    entry-frame points to its own frame-0 points exceeds ``move_thresh`` (or it is visible only at entry).
-    Static objects - occluded by the arm or settling by millimetres - keep matching their own points."""
-    from scipy.spatial import cKDTree
-    rng = np.random.default_rng(0)
-    pts = {0: {}, 1: {}}
-    for k, t in enumerate((0, e)):
-        for cam in EXO:
-            c, ids = load_cam(ep, obs[t].misc, cam, t)
-            for v in np.unique(ids[c.depth_valid]):
-                P = backproject_to_world(c.depth, c.K, c.T_WC, (ids == v) & c.depth_valid)
-                pts[k].setdefault(int(v), []).append(P)
-    out = set()
-    for v, lst in pts[1].items():
-        PE = np.concatenate(lst)
-        if len(PE) < min_pts:
-            continue
-        if v not in pts[0]:
-            out.add(v)
-            continue
-        P0 = np.concatenate(pts[0][v])
-        if len(PE) > max_pts:
-            PE = PE[rng.choice(len(PE), max_pts, replace=False)]
-        if np.median(cKDTree(P0).query(PE)[0]) > move_thresh:
-            out.add(v)
-    return out
+EXO = EXO_CAMERAS
 
 
 def outline(mask):
@@ -82,7 +45,7 @@ def outline(mask):
 
 def front_overlay(ep, obs, e, path, alpha, scale):
     import cv2
-    rid = robot_ids(ep, obs, e)
+    rid = robot_ids(ep, obs, [e])
     c0, ids0 = load_cam(ep, obs[0].misc, "front", 0)
     cE, idsE = load_cam(ep, obs[e].misc, "front", e)
     r0, rE = np.isin(ids0, list(rid)), np.isin(idsE, list(rid))
@@ -114,20 +77,9 @@ def front_overlay(ep, obs, e, path, alpha, scale):
     return rid
 
 
-def hand_points(ep, obs, e, rid, T_WE, box=((-0.05, 0.05), (-0.12, 0.12), (-0.12, 0.02))):
-    """Robot depth points at the entry frame cropped to a hand-sized box in the TCP frame
-    (x thin, y = finger opening / palm width, z = approach; palm behind the TCP at z < 0)."""
-    from entry_vla.geometry.transforms import invert_T
-    pts = []
-    for cam in EXO:
-        c, ids = load_cam(ep, obs[e].misc, cam, e)
-        m = np.isin(ids, list(rid)) & c.depth_valid
-        if m.any():
-            pts.append(backproject_to_world(c.depth, c.K, c.T_WC, m))
-    P = np.concatenate(pts) if pts else np.zeros((0, 3))
-    Q = apply_T(invert_T(T_WE), P)
-    keep = np.all([(Q[:, k] >= lo) & (Q[:, k] <= hi) for k, (lo, hi) in enumerate(box)], axis=0)
-    return P[keep]
+def hand_points(ep, obs, e, rid, T_WE):
+    """Robot depth points at the entry frame inside the TCP-frame hand box (shared scene helper)."""
+    return hand_and_env_points(ep, obs[e], e, rid)[0]
 
 
 def hand_schematic(T_WE, width):
