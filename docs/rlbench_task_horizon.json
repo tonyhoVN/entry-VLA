@@ -1,0 +1,1975 @@
+{
+ "criteria": {
+  "short_single": "no repeat, <=1 grasp, <=5 waypoints",
+  "long_horizon": "repeat, or >=2 grasps, or >=8 waypoints",
+  "medium": "otherwise",
+  "note": "counts from the task .ttm waypoint dummies; dynamic waypoints added in code are not seen"
+ },
+ "tasks": [
+  {
+   "task": "basketball_in_hoop",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "beat_the_buzz",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "open_gripper(); ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "block_pyramid",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 35,
+   "grasps": 6,
+   "releases": 7,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "change_channel",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 8,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(), ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "change_clock",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "open_gripper(),ignore_collisions",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_box",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "open_gripper(); ignore_collisions",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_door",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_drawer",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_fridge",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 0,
+   "releases": 0,
+   "extensions": [
+    "",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_grill",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_jar",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "",
+    "ignore_collisions",
+    "ignore_collisions, open_gripper()"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "close_laptop_lid",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "",
+    "open_gripper(0.1); ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "close_microwave",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 0,
+   "releases": 0,
+   "extensions": [
+    "",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "empty_container",
+   "repeats": true,
+   "waypoint_callbacks": 1,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper();ignore_collisions",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "empty_dishwasher",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 13,
+   "grasps": 3,
+   "releases": 2,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "ignore_collisions()",
+    "",
+    "ignore_collisions",
+    "open_gripper(0.25);)ignore_collisions",
+    "close_gripper();ignore_collisions",
+    "open_gripper();ignore_collisions;linear",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "get_ice_from_fridge",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "hang_frame_on_hanger",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "hit_ball_with_queue",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper();ignore_collisions",
+    "ignore_collisions",
+    "",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "hockey",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "insert_onto_square_peg",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(),ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "insert_usb_in_computer",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "open_gripper(); ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "lamp_off",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper(0.1), ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "lamp_on",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper(0.1), ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "lift_numbered_block",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "light_bulb_in",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 7,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "",
+    "ignore_collisions",
+    "open_gripper()",
+    ""
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "light_bulb_out",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "meat_off_grill",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "",
+    "ignore_collisions, open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "meat_on_grill",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "move_hanger",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_box",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_door",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_color_frame",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_color_full",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_shape_large_handles",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_shape_small_body",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_shape_square_handles",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_texture_frame",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_drawer_test_texture_full",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_fridge",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_grill",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper();ignore_collisions",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_jar",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "",
+    "open_gripper()"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "open_microwave",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_oven",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_washing_machine",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(0)",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_window",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "open_wine_bottle",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "phone_on_base",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper();ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "pick_and_lift",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "pick_and_lift_small",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "pick_up_cup",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "place_cups",
+   "repeats": true,
+   "waypoint_callbacks": 1,
+   "waypoints": 7,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(0.6),ignore_collisions",
+    "ignore_collisions",
+    "",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions, open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "place_hanger_on_rack",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "place_shape_in_shape_sorter",
+   "repeats": false,
+   "waypoint_callbacks": 2,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(),ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper();ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "place_wine_at_rack_location",
+   "repeats": false,
+   "waypoint_callbacks": 5,
+   "waypoints": 9,
+   "grasps": 1,
+   "releases": 4,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "open_gripper(),ignore_collisions",
+    "ignore_collisions",
+    "open_gripper(),ignore_collisions",
+    "ignore_collisions",
+    "open_gripper(),ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "play_jenga",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper();linear",
+    "ignore_collision;open_gripper();linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "plug_charger_in_power_supply",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "pour_from_cup_to_cup",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper();ignore_collisions",
+    "ignore_collisions",
+    "",
+    "ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "press_switch",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "push_button",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper(0.1), ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "push_buttons",
+   "repeats": true,
+   "waypoint_callbacks": 1,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper(0.1), ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_all_groceries_in_cupboard",
+   "repeats": true,
+   "waypoint_callbacks": 2,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper();ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_books_at_shelf_location",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 17,
+   "grasps": 3,
+   "releases": 5,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(0.5)",
+    "open_gripper(); ignore_collisions",
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_books_on_bookshelf",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 17,
+   "grasps": 3,
+   "releases": 5,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(0.5)",
+    "open_gripper(); ignore_collisions",
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_bottle_in_fridge",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 9,
+   "grasps": 2,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    "",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_groceries_in_cupboard",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(),ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(),ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_item_in_drawer",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 11,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "",
+    "",
+    "close_gripper()",
+    "ignore_collisions; open_gripper()",
+    "",
+    "",
+    "",
+    "close_gripper()",
+    "",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_knife_in_knife_block",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper();ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_knife_on_chopping_board",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_money_in_safe",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_plate_in_colored_dish_rack",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper();ignore_collisions;linear"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_rubbish_in_bin",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_rubbish_in_color_bin",
+   "repeats": false,
+   "waypoint_callbacks": 2,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "open_gripper()",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_shoes_in_box",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 13,
+   "grasps": 4,
+   "releases": 3,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "close_gripper(); ignore_collisions",
+    "open_gripper(); ignore_collisions",
+    "",
+    "ignore_collisions; close_gripper()",
+    "ignore_collisions",
+    "open_gripper()",
+    "",
+    "ignore_collisions; close_gripper()",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_toilet_roll_on_stand",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "ignore_collisions;open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "put_tray_in_oven",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 11,
+   "grasps": 3,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "",
+    "ignore_collisions",
+    "close_gripper(0.4)",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "",
+    "open_gripper(0.5)"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "put_umbrella_in_umbrella_stand",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "reach_and_drag",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "",
+    ""
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "reach_target",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 1,
+   "grasps": 0,
+   "releases": 0,
+   "extensions": [
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "remove_cups",
+   "repeats": true,
+   "waypoint_callbacks": 1,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "ignore_collisions, close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "scoop_with_spatula",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "ignore_collisions;close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "screw_nail",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "ignore_collisions",
+    "ignore_collisions;linear"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "set_clock_to_time",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 3,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(),ignore_collisions",
+    "open_gripper(),ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "set_the_table",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 28,
+   "grasps": 5,
+   "releases": 5,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "open_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "setup_checkers",
+   "repeats": true,
+   "waypoint_callbacks": 1,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(), ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "setup_chess",
+   "repeats": true,
+   "waypoint_callbacks": 1,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(), ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "slide_block_to_color_target",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper(0.5)",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "slide_block_to_target",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper(0.5)",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "slide_cabinet_open",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 2,
+   "releases": 1,
+   "extensions": [
+    "close_gripper(0.2)",
+    "close_gripper()",
+    "ignore_collisions; open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "slide_cabinet_open_and_place_cups",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 8,
+   "grasps": 3,
+   "releases": 2,
+   "extensions": [
+    "close_gripper(0.2)",
+    "close_gripper()",
+    "ignore_collisions; open_gripper()",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(0.2);ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "solve_puzzle",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper();ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "stack_blocks",
+   "repeats": true,
+   "waypoint_callbacks": 3,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper(),ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(),ignore_collisions",
+    ""
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "stack_chairs",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 11,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "",
+    "",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "stack_cups",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 10,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "stack_wine",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "straighten_rope",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions; open_gripper()",
+    "ignore_collisions",
+    "",
+    "close_gripper()",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "sweep_to_dustpan",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "sweep_to_dustpan_of_size",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "take_cup_out_from_cabinet",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 7,
+   "grasps": 4,
+   "releases": 2,
+   "extensions": [
+    "close_gripper(0.2)",
+    "close_gripper()",
+    "ignore_collisions; open_gripper()",
+    "close_gripper(0.4)",
+    "",
+    "close_gripper()",
+    "ignore_collisions; open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "take_frame_off_hanger",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "take_item_out_of_drawer",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 8,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions; open_gripper()",
+    "",
+    "",
+    "close_gripper()",
+    "",
+    "open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "take_lid_off_saucepan",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "take_money_out_safe",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper(), ignore_collisions",
+    "ignore_collisions",
+    "open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "take_off_weighing_scales",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "",
+    "open_gripper()"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "take_plate_off_colored_dish_rack",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(), ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "take_shoes_out_of_box",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 14,
+   "grasps": 4,
+   "releases": 3,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "close_gripper(); ignore_collisions",
+    "open_gripper(); ignore_collisions",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions",
+    "",
+    "close_gripper(); ignore_collisions",
+    "ignore_collisions",
+    "",
+    "open_gripper(); ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "take_toilet_roll_off_stand",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "take_tray_out_of_oven",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 10,
+   "grasps": 2,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "",
+    "",
+    "ignore_collisions",
+    "ignore_collisions, close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions, open_gripper()"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "take_umbrella_out_of_umbrella_stand",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "take_usb_out_of_computer",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions; open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "toilet_seat_down",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions; open_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "toilet_seat_up",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    ""
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "turn_oven_on",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 3,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "turn_tap",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "tv_on",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 8,
+   "grasps": 2,
+   "releases": 2,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "open_gripper(), ignore_collisions",
+    "",
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "long_horizon"
+  },
+  {
+   "task": "unplug_charger",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 2,
+   "grasps": 1,
+   "releases": 0,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "water_plants",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 4,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "close_gripper()",
+    "ignore_collisions",
+    "ignore_collisions",
+    "ignore_collisions; open_gripper()"
+   ],
+   "class": "short_single"
+  },
+  {
+   "task": "weighing_scales",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 6,
+   "grasps": 1,
+   "releases": 3,
+   "extensions": [
+    "open_gripper()",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "ignore_collisions, open_gripper()",
+    "ignore_collisions, open_gripper()"
+   ],
+   "class": "medium"
+  },
+  {
+   "task": "wipe_desk",
+   "repeats": false,
+   "waypoint_callbacks": 0,
+   "waypoints": 5,
+   "grasps": 1,
+   "releases": 1,
+   "extensions": [
+    "",
+    "close_gripper()",
+    "ignore_collisions",
+    "",
+    "ignore_collisions, open_gripper()"
+   ],
+   "class": "short_single"
+  }
+ ]
+}
