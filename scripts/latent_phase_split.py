@@ -81,6 +81,19 @@ def split_episode(embs, k3_min_len, window):
     return res
 
 
+def write_phase_videos(ep, lat_out, bounds, n, label, fps):
+    """phase<i>_<start>-<end>.mp4 for every segment between ``bounds`` (all cameras, RGB over depth)."""
+    sys.path.insert(0, os.path.dirname(__file__))
+    from detect_transition_rlbench import tile, write_video
+    for old in (f for f in os.listdir(lat_out) if f.startswith("phase") and f.endswith(".mp4")):
+        os.remove(os.path.join(lat_out, old))
+    edges = [0] + list(bounds) + [n]
+    for i, (s, e) in enumerate(zip(edges[:-1], edges[1:]), 1):
+        if e > s:
+            write_video(os.path.join(lat_out, f"phase{i}_{s:03d}-{e - 1:03d}.mp4"),
+                        [tile(ep, t, f"{i}/{len(edges) - 1} ({label})", 1) for t in range(s, e)], fps)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--episodes-root", required=True, help="raw .../variation<V>/episodes")
@@ -93,6 +106,8 @@ def main():
     ap.add_argument("--perception-radius", type=float, default=0.10)
     ap.add_argument("--max-episodes", type=int, default=None)
     ap.add_argument("--force", action="store_true", help="recompute cached embeddings")
+    ap.add_argument("--video-split", default="wrist:k3", help="view:method for phase videos (k2|k3|novelty); 'none' skips")
+    ap.add_argument("--video-fps", type=int, default=20)
     a = ap.parse_args()
 
     from entry_vla.perception.latent_split import FrameEncoder
@@ -116,6 +131,12 @@ def main():
                    "note": "unsupervised change points in DINOv2 CLS space; references are not human labels"}
         with open(os.path.join(lat_out, "latent_split.json"), "w") as f:
             json.dump(summary, f, indent=1)
+        if a.video_split != "none":
+            view, method = a.video_split.split(":")
+            sp = splits[view]
+            b = sp["k3"] if method == "k3" else [sp["k2" if method == "k2" else "novelty_peak"]]
+            write_phase_videos(ep, lat_out, [x for x in b if x is not None], summary["num_frames"],
+                               f"latent {view} {method}", a.video_fps)
         row = {"episode": d, "frames": summary["num_frames"], **{k: v for k, v in refs.items() if k != "gripper_toggles"}}
         for v, s in splits.items():
             row[f"{v}_k2"], row[f"{v}_novelty"] = s["k2"], s["novelty_peak"]
