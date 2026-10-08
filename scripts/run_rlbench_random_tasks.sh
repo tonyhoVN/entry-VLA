@@ -15,11 +15,12 @@ set -uo pipefail
 
 K=${1:?number of tasks}; SEED=${2:?seed}
 IMAGE_SIZE=${IMAGE_SIZE:-256}; EPISODES=${EPISODES:-1}
-RAW_ROOT=${RAW_ROOT:-data/raw/rlbench_random${K}_seed${SEED}}
-OUT_ROOT=${OUT_ROOT:-data/entry_process/rlbench_random${K}_seed${SEED}}
+RAW_ROOT=${RAW_ROOT:-data/raw/rlbench_single_seed${SEED}}
+OUT_ROOT=${OUT_ROOT:-data/entry_process/rlbench_single_seed${SEED}}
 SIM_PY=${SIM_PY:-$HOME/anaconda3/envs/peract2/bin/python}
 PROC_PY=${PROC_PY:-$HOME/anaconda3/envs/entryvla/bin/python}
 mkdir -p "$OUT_ROOT"
+trap 'echo "interrupted"; exit 130' INT TERM   # Ctrl+C stops the whole run, not just the child
 
 if [ -z "${TASKS:-}" ]; then
   TASKS=$(python3 - "$K" "$SEED" <<'EOF'
@@ -52,13 +53,17 @@ for t in $TASKS; do
     var=$(basename "$(dirname "$(dirname "$ep")")")
     out="$OUT_ROOT/$t/$var/$(basename "$ep")"
     echo "== process $t/$var/$(basename "$ep")"
+    mkdir -p "$out"
+    if [ ! -f "$ep/low_dim_obs.pkl" ]; then   # interrupted/partial generation
+      echo -e "$t\t$var\tincomplete_episode" >> "$OUT_ROOT/status.tsv"; echo "   skipped: no low_dim_obs.pkl"; continue
+    fi
     "$PROC_PY" scripts/detect_transition_rlbench.py --episode "$ep" --out "$out" --no-video \
-      > "$out.detect.log" 2>&1 || true   # needs a task-specific target slot; optional here
+      > "$out/detect.log" 2>&1 || true   # needs a task-specific target slot; optional here
     if "$PROC_PY" scripts/perception_phase_split.py --episode "$ep" --out "$out/perception" \
-         --target-slice none > "$out.perception.log" 2>&1; then
+         --target-slice none > "$out/perception.log" 2>&1; then
       echo -e "$t\t$var\tok" >> "$OUT_ROOT/status.tsv"
     else
-      echo -e "$t\t$var\tperception_failed" >> "$OUT_ROOT/status.tsv"; echo "   perception failed (see $out.perception.log)"
+      echo -e "$t\t$var\tperception_failed" >> "$OUT_ROOT/status.tsv"; echo "   perception failed (see $out/perception.log)"
     fi
   done
 done
