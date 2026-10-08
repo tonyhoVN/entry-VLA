@@ -11,11 +11,11 @@ set -euo pipefail
 
 TASK=${1:?task}; VAR=${2:?variation}; N=${3:?episodes}; SEED=${4:?seed}
 IMAGE_SIZE=${IMAGE_SIZE:-256}
-RAW_ROOT=${RAW_ROOT:-data/raw/rlbench_single_seed${SEED}}
+RAW_ROOT=${RAW_ROOT:-data/raw/rlbench_single}
 OUT_ROOT=${OUT_ROOT:-data/entry_process/${TASK}_seed${SEED}/variation${VAR}}
 SIM_PY=${SIM_PY:-$HOME/anaconda3/envs/peract2/bin/python}
 PROC_PY=${PROC_PY:-$HOME/anaconda3/envs/entryvla/bin/python}
-EP_ROOT=$RAW_ROOT/$TASK/variation$VAR/episodes
+EP_ROOT=$RAW_ROOT/$TASK/variation$VAR/seed$SEED/episodes
 
 if [ "${SKIP_GENERATE:-0}" != "1" ]; then
   export COPPELIASIM_ROOT=${COPPELIASIM_ROOT:-$HOME/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04}

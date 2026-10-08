@@ -7,8 +7,9 @@ cameras to ``ObservationConfig.camera_configs`` and ``obs.perception_data``. Thi
 follows ``tools/dataset_generator_bimanual.py`` with ``robot_setup='panda'``.
 
 Output (upstream single-arm layout):
-  <save_path>/<task>/variation<V>/episodes/episode<N>/{low_dim_obs.pkl, variation_number.pkl,
+  <save_path>/<task>/variation<V>/seed<S>/episodes/episode<N>/{low_dim_obs.pkl, variation_number.pkl,
   variation_descriptions.pkl, <cam>_rgb/rgb_0000.png, <cam>_depth/depth_0000.png, <cam>_mask/mask_0000.png}
+The seed level is ``seed<--seed>`` (``seed_none`` without --seed); episode numbering restarts per seed.
 Depth PNGs are RGB-packed linear buffers (DEPTH_SCALE = 2**24 - 1, depth_in_meters=False).
 Demos are scripted waypoint/motion-planning rollouts, not teleoperation.
 """
@@ -88,6 +89,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     np.random.seed(args.seed)
     _patch_unimanual_release()
+    seed_dir = f"seed{args.seed}" if args.seed is not None else "seed_none"
 
     obs_config = ObservationConfig()
     obs_config.set_all(True)
@@ -118,7 +120,7 @@ def main():
             else:
                 raise SystemExit(f"episode {ex}: all {args.attempts} attempts failed")
             ep_path = os.path.join(args.save_path, task_env.get_name(), VARIATIONS_FOLDER % variation,
-                                   EPISODES_FOLDER, EPISODE_FOLDER % ex)
+                                   seed_dir, EPISODES_FOLDER, EPISODE_FOLDER % ex)
             os.makedirs(ep_path, exist_ok=True)
             save_demo(demo, ep_path, variation)
             with open(os.path.join(ep_path, VARIATION_DESCRIPTIONS), "wb") as f:

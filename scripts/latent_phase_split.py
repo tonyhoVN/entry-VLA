@@ -12,7 +12,7 @@ and compare them with existing references in <out>/<episode>/ when present:
   (Qwen3-VL + SAM distance split at --perception-radius). Neither reference is a human label.
 
   python scripts/latent_phase_split.py \
-      --episodes-root data/raw/rlbench_single_seed42/push_button/variation4/episodes \
+      --episodes-root data/raw/rlbench_single/push_button/variation4/seed42/episodes \
       --out data/entry_process/push_button_seed42/variation4
 """
 

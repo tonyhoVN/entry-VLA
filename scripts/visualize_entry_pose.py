@@ -11,7 +11,7 @@ The entry frame is pred_start_at_baseline (the perception split at its radius). 
 simulator mask images: ids whose 3-D points (all exo cameras) moved by more than 2 cm between frame 0 and the
 entry frame (static objects - occluded or settling - keep matching their own points).
 
-  python scripts/visualize_entry_pose.py --raw-root data/raw/rlbench_single_seed42 \
+  python scripts/visualize_entry_pose.py --raw-root data/raw/rlbench_single --seed 42 \
       --out-root data/entry_process/rlbench_short5_seed42
 """
 
@@ -142,6 +142,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--raw-root", required=True)
     ap.add_argument("--out-root", required=True)
+    ap.add_argument("--seed", default="42", help="raw seed level: <raw-root>/<task>/variation<V>/seed<S>")
     ap.add_argument("--alpha", type=float, default=0.45, help="opacity of the entry-frame robot on frame 0")
     ap.add_argument("--scale", type=int, default=3, help="upscale of the 256 px front image")
     a = ap.parse_args()
@@ -154,7 +155,7 @@ def main():
         if e is None:
             print(task, "no manipulation start; skipped", flush=True)
             continue
-        ep = os.path.join(a.raw_root, task, var, "episodes", epn)
+        ep = os.path.join(a.raw_root, task, var, f"seed{a.seed}", "episodes", epn)
         out = os.path.join(os.path.dirname(os.path.dirname(cmp_path)), "entry_viz")
         os.makedirs(out, exist_ok=True)
         obs = demo_observations(load_pickle(os.path.join(ep, "low_dim_obs.pkl")))

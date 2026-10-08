@@ -18,7 +18,7 @@ Steps:
 Only the standard library plus numpy/PIL/cv2/ffmpeg are needed (no openai package).
 
   python scripts/cosmos_phase_split.py --make-video --query \
-      --episode data/raw/rlbench_single/push_button/variation4/episodes/episode0 \
+      --episode data/raw/rlbench_single/push_button/variation4/seed_unknown/episodes/episode0 \
       --out data/entry_process/push_button/variation4/episode0 \
       --base-url http://localhost:8000/v1
 """

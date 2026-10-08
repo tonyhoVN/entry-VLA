@@ -8,7 +8,7 @@ any env with numpy, PIL, cv2 and an ``ffmpeg`` binary. The logic is documented
 in the generated README.md next to the outputs.
 
   python scripts/detect_transition_rlbench.py \
-      --episode data/raw/rlbench_single/push_button/variation4/episodes/episode0 \
+      --episode data/raw/rlbench_single/push_button/variation4/seed_unknown/episodes/episode0 \
       --out data/entry_process/push_button/variation4/episode0
 """
 

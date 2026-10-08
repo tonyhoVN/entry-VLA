@@ -22,11 +22,11 @@ Environments:
 ```bash
 source scripts/RLBench_env.sh
 python scripts/rlbench_single_generator.py --task push_button --variation 4 --episodes 20 \
-  --seed 42 --image_size 256 256 --save_path data/raw/rlbench_single_seed42
+  --seed 42 --image_size 256 256 --save_path data/raw/rlbench_single
 ```
 
 Output:
-- `data/raw/rlbench_single_seed42/push_button/variation4/episodes/episode<N>/`;
+- `data/raw/rlbench_single/push_button/variation4/seed42/episodes/episode<N>/`;
 - in each episode: `<cam>_rgb/`, `<cam>_depth/` and `<cam>_mask/` for the cameras `front`, `over_shoulder_left`,
   `over_shoulder_right`, `overhead` and `wrist`, plus `low_dim_obs.pkl`.
 
@@ -36,7 +36,7 @@ The split is unsupervised. To judge it, compute reference frames from the record
 
 ```bash
 conda activate entryvla
-for ep in data/raw/rlbench_single_seed42/push_button/variation4/episodes/episode*; do
+for ep in data/raw/rlbench_single/push_button/variation4/seed42/episodes/episode*; do
   python scripts/detect_transition_rlbench.py --episode $ep \
     --out data/entry_process/push_button_seed42/variation4/$(basename $ep) --no-video
 done
@@ -226,7 +226,7 @@ a qualitative sign that the boundary separates genuinely different views.
 
 ```bash
 nohup python scripts/latent_phase_split.py \
-  --episodes-root data/raw/rlbench_single_seed42/push_button/variation4/episodes \
+  --episodes-root data/raw/rlbench_single/push_button/variation4/seed42/episodes \
   --out data/entry_process/push_button_seed42/variation4 \
   > data/entry_process/push_button_seed42/variation4/latent_run.log 2>&1 &
 tail -f data/entry_process/push_button_seed42/variation4/latent_run.log

@@ -15,7 +15,7 @@ set -uo pipefail
 
 K=${1:?number of tasks}; SEED=${2:?seed}
 IMAGE_SIZE=${IMAGE_SIZE:-256}; EPISODES=${EPISODES:-1}
-RAW_ROOT=${RAW_ROOT:-data/raw/rlbench_single_seed${SEED}}
+RAW_ROOT=${RAW_ROOT:-data/raw/rlbench_single}   # <task>/variation<V>/seed<S>/episodes/episode<N>
 OUT_ROOT=${OUT_ROOT:-data/entry_process/rlbench_single_seed${SEED}}
 SIM_PY=${SIM_PY:-$HOME/anaconda3/envs/peract2/bin/python}
 PROC_PY=${PROC_PY:-$HOME/anaconda3/envs/entryvla/bin/python}
@@ -49,8 +49,8 @@ for t in $TASKS; do
       echo -e "$t\tgenerate_failed" >> "$OUT_ROOT/status.tsv"; echo "   generate failed (see gen_$t.log)"; continue
     fi
   fi
-  for ep in $(ls -d "$RAW_ROOT/$t"/variation*/episodes/episode* 2>/dev/null | sort -V); do
-    var=$(basename "$(dirname "$(dirname "$ep")")")
+  for ep in $(ls -d "$RAW_ROOT/$t"/variation*/seed$SEED/episodes/episode* 2>/dev/null | sort -V); do
+    var=$(basename "$(dirname "$(dirname "$(dirname "$ep")")")")
     out="$OUT_ROOT/$t/$var/$(basename "$ep")"
     echo "== process $t/$var/$(basename "$ep")"
     mkdir -p "$out"

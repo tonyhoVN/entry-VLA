@@ -18,7 +18,7 @@ Outputs in <out>/contact/: contact.json, contact_curve.csv, contact_curve.png, p
 Robot ids come from privileged mask images, so this is an annotation/oracle tool.
 
   python scripts/contact_phase_split.py \
-      --episode data/raw/rlbench_single_seed42/close_fridge/variation0/episodes/episode0 \
+      --episode data/raw/rlbench_single/close_fridge/variation0/seed42/episodes/episode0 \
       --out data/entry_process/rlbench_single_seed42/close_fridge/variation0/episode0
 """
 

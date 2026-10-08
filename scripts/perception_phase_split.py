@@ -17,7 +17,7 @@ true surface cloud. Reference start(R) = first frame with true TCP-surface dista
 isolates perception error; it is NOT a human phase label (the dataset has none).
 
   python scripts/perception_phase_split.py \
-      --episode data/raw/rlbench_single/push_button/variation4/episodes/episode0 \
+      --episode data/raw/rlbench_single/push_button/variation4/seed_unknown/episodes/episode0 \
       --out data/entry_process/push_button/variation4/episode0/perception
 """
 
