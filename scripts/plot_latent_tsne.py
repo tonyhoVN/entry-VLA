@@ -69,19 +69,22 @@ def main():
     ap.add_argument("--view", default="wrist", choices=["exo", "wrist", "all"])
     ap.add_argument("--method", default="k3", choices=["k2", "k3", "novelty"])
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--latent-dir", default="latent")
+    ap.add_argument("--episodes", nargs="+", default=None)
     a = ap.parse_args()
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
     eps = sorted((d for d in os.listdir(a.out) if d.startswith("episode")
-                  and os.path.exists(os.path.join(a.out, d, "latent", "latent_split.json"))), key=lambda d: int(d[7:]))
+                  and os.path.exists(os.path.join(a.out, d, a.latent_dir, "latent_split.json"))
+                  and (not a.episodes or d in a.episodes)), key=lambda d: int(d[7:]))
     cols = 5
     rows = int(np.ceil(len(eps) / cols))
     fig_all, axes = plt.subplots(rows, cols, figsize=(3.2 * cols, 3.0 * rows), facecolor=SURFACE)
     axes = np.atleast_1d(axes).ravel()
     for k, d in enumerate(eps):
-        lat = os.path.join(a.out, d, "latent")
+        lat = os.path.join(a.out, d, a.latent_dir)
         split = json.load(open(os.path.join(lat, "latent_split.json")))
         cams = split["view_sets"][a.view]
         X = standardise(np.concatenate([np.load(os.path.join(lat, f"embeddings_{c}.npy")) for c in cams], axis=1))
@@ -109,7 +112,8 @@ def main():
     fig_all.suptitle(f"t-SNE of per-frame DINOv2 {a.view} embeddings, coloured by latent {a.method} phases "
                      f"(grey line = time order, ring = first frame)", color=INK, fontsize=12, x=0.01, ha="left")
     fig_all.tight_layout(rect=(0, 0.04, 1, 0.97))
-    path = os.path.join(a.out, f"latent_tsne_overview_{a.view}_{a.method}.png")
+    tag = "" if a.latent_dir == "latent" else f"_{a.latent_dir}"
+    path = os.path.join(a.out, f"latent_tsne_overview{tag}_{a.view}_{a.method}.png")
     fig_all.savefig(path, dpi=130, facecolor=SURFACE)
     print("overview:", path)
 

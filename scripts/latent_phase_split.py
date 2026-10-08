@@ -105,6 +105,8 @@ def main():
     ap.add_argument("--k3-min-len", type=int, default=5)
     ap.add_argument("--perception-radius", type=float, default=0.10)
     ap.add_argument("--max-episodes", type=int, default=None)
+    ap.add_argument("--episodes", nargs="+", default=None, help="only these episode dirs, e.g. episode0")
+    ap.add_argument("--latent-dir", default="latent", help="per-episode output subdir")
     ap.add_argument("--force", action="store_true", help="recompute cached embeddings")
     ap.add_argument("--video-split", default="wrist:k3", help="view:method for phase videos (k2|k3|novelty); 'none' skips")
     ap.add_argument("--video-fps", type=int, default=20)
@@ -117,9 +119,11 @@ def main():
 
     eps = sorted((d for d in os.listdir(a.episodes_root) if d.startswith("episode")), key=lambda d: int(d[7:]))
     rows = []
+    if a.episodes:
+        eps = [d for d in eps if d in set(a.episodes)]
     for d in eps[:a.max_episodes]:
         ep, ep_out = os.path.join(a.episodes_root, d), os.path.join(a.out, d)
-        lat_out = os.path.join(ep_out, "latent")
+        lat_out = os.path.join(ep_out, a.latent_dir)
         os.makedirs(lat_out, exist_ok=True)
         t1 = time.time()
         embs = embed_episode(enc, ep, lat_out, ALL_CAMERAS, a.force)
@@ -146,7 +150,8 @@ def main():
               f"{time.time() - t1:.1f}s", flush=True)
 
     keys = list(dict.fromkeys(k for r in rows for k in r))
-    with open(os.path.join(a.out, "latent_summary.csv"), "w", newline="") as f:
+    tag = "" if a.latent_dir == "latent" else "_" + a.latent_dir
+    with open(os.path.join(a.out, f"latent_summary{tag}.csv"), "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=keys)
         w.writeheader()
         w.writerows(rows)
@@ -159,7 +164,7 @@ def main():
                 agg["error_vs_reference_frames"][f"{col} - {ref}"] = {
                     "n": len(e), "mean": round(float(np.mean(e)), 2), "mean_abs": round(float(np.mean(np.abs(e))), 2),
                     "median_abs": float(np.median(np.abs(e))), "within_5_frames": round(float(np.mean(np.abs(e) <= 5)), 2)}
-    with open(os.path.join(a.out, "latent_summary.json"), "w") as f:
+    with open(os.path.join(a.out, f"latent_summary{tag}.json"), "w") as f:
         json.dump(agg, f, indent=2)
     print(json.dumps(agg, indent=1))
 
