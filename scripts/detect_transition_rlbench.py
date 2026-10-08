@@ -113,7 +113,8 @@ def tile(ep, i, phase, scale):
         deps.append(np.ascontiguousarray(dc))
     img = np.concatenate([np.concatenate(rgbs, 1), np.concatenate(deps, 1)], 0)
     banner = np.zeros((24, img.shape[1], 3), np.uint8)
-    cv2.putText(banner, f"frame {i:03d}  phase: {phase}  (top: RGB, bottom: depth buffer, per-camera normalised)",
+    tag = f"  phase: {phase}" if phase else ""
+    cv2.putText(banner, f"frame {i:03d}{tag}  (top: RGB, bottom: depth buffer, per-camera normalised)",
                 (6, 17), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
     return np.concatenate([banner, img], 0)
 

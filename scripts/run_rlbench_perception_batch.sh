@@ -26,9 +26,11 @@ if [ "${SKIP_GENERATE:-0}" != "1" ]; then
     --seed "$SEED" --image_size "$IMAGE_SIZE" "$IMAGE_SIZE" --save_path "$RAW_ROOT"
 fi
 
-echo "== state-based transition detector (stopped keyframe / contact)"
+echo "== RGB-D episode video + state-based transition detector (stopped keyframe / contact)"
 for ep in $(ls -d "$EP_ROOT"/episode* | sort -V); do
-  "$PROC_PY" scripts/detect_transition_rlbench.py --episode "$ep" --out "$OUT_ROOT/$(basename "$ep")" --no-video >/dev/null
+  out="$OUT_ROOT/$(basename "$ep")"; mkdir -p "$out"
+  "$PROC_PY" scripts/episode_rgbd_video.py --episode "$ep" --out "$out/episode_rgbd.mp4" >/dev/null
+  "$PROC_PY" scripts/detect_transition_rlbench.py --episode "$ep" --out "$out" --no-video >/dev/null
 done
 
 echo "== perception method vs simulator reference"

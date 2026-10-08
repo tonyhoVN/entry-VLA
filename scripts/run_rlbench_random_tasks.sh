@@ -57,6 +57,8 @@ for t in $TASKS; do
     if [ ! -f "$ep/low_dim_obs.pkl" ]; then   # interrupted/partial generation
       echo -e "$t\t$var\tincomplete_episode" >> "$OUT_ROOT/status.tsv"; echo "   skipped: no low_dim_obs.pkl"; continue
     fi
+    "$PROC_PY" scripts/episode_rgbd_video.py --episode "$ep" --out "$out/episode_rgbd.mp4" \
+      > "$out/video.log" 2>&1 || echo "   video failed (see $out/video.log)"
     "$PROC_PY" scripts/detect_transition_rlbench.py --episode "$ep" --out "$out" --no-video \
       > "$out/detect.log" 2>&1 || true   # needs a task-specific target slot; optional here
     if "$PROC_PY" scripts/perception_phase_split.py --episode "$ep" --out "$out/perception" \
