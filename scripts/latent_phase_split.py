@@ -29,8 +29,9 @@ from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from entry_vla.data.peract2_raw import demo_observations, load_pickle  # noqa: E402
 from entry_vla.geometry.camera import decode_depth, valid_depth_mask  # noqa: E402
-from entry_vla.perception.latent_split import (build_trajectory, depth_grid, first_boundary,  # noqa: E402
-                                               novelty_curve, novelty_peaks, optimal_segmentation)
+from entry_vla.perception.latent_split import (build_trajectory, cross_frame_attention, depth_grid,  # noqa: E402
+                                               first_boundary, novelty_curve, novelty_peaks,
+                                               optimal_segmentation)
 
 ALL_CAMERAS = ["front", "over_shoulder_left", "over_shoulder_right", "overhead", "wrist"]
 VIEW_SETS = {"exo": ["front", "over_shoulder_left"], "wrist": ["wrist"], "all": ALL_CAMERAS,
@@ -163,6 +164,12 @@ def main():
     ap.add_argument("--episodes", nargs="+", default=None, help="only these episode dirs, e.g. episode0")
     ap.add_argument("--latent-dir", default="latent", help="per-episode output subdir")
     ap.add_argument("--depth-grid", type=int, default=16, help="depth feature grid size per camera")
+    ap.add_argument("--cross-frame-attn", action="store_true",
+                    help="apply training-free temporal self-attention to each camera's RGB embeddings")
+    ap.add_argument("--attn-tau", type=float, default=0.1)
+    ap.add_argument("--attn-lambda", type=float, default=10.0, help="temporal decay (frames); inf = none")
+    ap.add_argument("--attn-alpha", type=float, default=0.5)
+    ap.add_argument("--attn-iters", type=int, default=1)
     ap.add_argument("--force", action="store_true", help="recompute cached embeddings")
     ap.add_argument("--video-split", default="wrist:k3", help="view:method for phase videos (k2|k3|novelty); 'none' skips")
     ap.add_argument("--video-fps", type=int, default=20)
@@ -192,10 +199,15 @@ def main():
         embs = embed_episode(enc, ep, lat_out, ALL_CAMERAS, a.force)
         depth_cams = sorted({c.split(":", 1)[1] for v in VIEW_SETS.values() for c in v if c.startswith("depth:")})
         embs.update(depth_features(ep, lat_out, depth_cams, a.depth_grid, a.force))
+        if a.cross_frame_attn:  # cached raw embeddings stay untouched; attention applied in memory
+            for cam in ALL_CAMERAS:
+                embs[cam] = cross_frame_attention(embs[cam], a.attn_tau, a.attn_lambda, a.attn_alpha, a.attn_iters)
         splits = split_episode(embs, a.k3_min_len, a.window)
         refs = references(ep_out, a.perception_radius)
         summary = {"format": "entry_vla.latent_phase_split/1", "episode": os.path.abspath(ep), "encoder": a.encoder,
                    "num_frames": int(len(embs["front"])), "view_sets": VIEW_SETS, "window": a.window,
+                   "cross_frame_attention": {"tau": a.attn_tau, "lambda": a.attn_lambda, "alpha": a.attn_alpha,
+                                             "iters": a.attn_iters} if a.cross_frame_attn else None,
                    "splits": splits, "references": refs,
                    "note": "unsupervised change points in DINOv2 CLS space; references are not human labels"}
         with open(os.path.join(lat_out, "latent_split.json"), "w") as f:

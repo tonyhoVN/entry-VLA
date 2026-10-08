@@ -44,3 +44,14 @@ def test_depth_grid_and_balanced_blocks():
     X = build_trajectory([a, b], balance=True)
     assert X.shape == (50, 400)
     assert np.isclose((X[:, :384] ** 2).sum(), (X[:, 384:] ** 2).sum())  # equal total variance per block
+
+
+def test_cross_frame_attention_tightens_segments():
+    from entry_vla.perception.latent_split import cross_frame_attention
+    X = _piecewise([30, 30], dim=16, noise=0.4, seed=3)
+    X /= np.linalg.norm(X, axis=1, keepdims=True)
+    Y = cross_frame_attention(X, tau=0.1, lam=10.0, alpha=0.5)
+    assert Y.shape == X.shape and np.allclose(np.linalg.norm(Y, axis=1), 1.0)
+    spread = lambda Z: sum(((Z[s] - Z[s].mean(0)) ** 2).sum() for s in (slice(0, 30), slice(30, 60)))
+    assert spread(Y) < spread(X)
+    assert optimal_segmentation(standardise(Y), 2) == [30]

@@ -137,3 +137,23 @@ def build_trajectory(blocks: Sequence[np.ndarray], balance: bool = False) -> np.
         Z = standardise(B)
         out.append(Z / np.sqrt(Z.shape[1]) if balance else Z)
     return np.concatenate(out, axis=1)
+
+
+def cross_frame_attention(Z: np.ndarray, tau: float = 0.1, lam: float = 10.0, alpha: float = 0.5,
+                          iters: int = 1) -> np.ndarray:
+    """Training-free temporal self-attention over one camera's frame embeddings (T, D):
+    A_ts = softmax_s(z_t.z_s / tau - |t - s| / lam), z'_t = (1 - alpha) z_t + alpha sum_s A_ts z_s,
+    re-normalised. Frames are pulled toward similar, nearby frames (sharper phase clusters)."""
+    Z = np.asarray(Z, dtype=np.float64)
+    T = len(Z)
+    t = np.arange(T)
+    bias = -np.abs(t[:, None] - t[None, :]) / max(lam, 1e-6) if np.isfinite(lam) else 0.0
+    for _ in range(iters):
+        Zn = Z / np.maximum(np.linalg.norm(Z, axis=1, keepdims=True), 1e-12)
+        logits = Zn @ Zn.T / tau + bias
+        logits -= logits.max(1, keepdims=True)
+        A = np.exp(logits)
+        A /= A.sum(1, keepdims=True)
+        Z = (1 - alpha) * Z + alpha * A @ Z
+        Z /= np.maximum(np.linalg.norm(Z, axis=1, keepdims=True), 1e-12)
+    return Z
