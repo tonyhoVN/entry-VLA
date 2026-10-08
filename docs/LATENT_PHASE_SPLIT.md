@@ -84,6 +84,144 @@ Three detectors run on `X`:
 
 `--k3-min-len` sets the minimum segment length (5 frames). Boundaries are the first frame of the new segment.
 
+## Algorithm in detail
+
+Notation:
+- an episode has $T$ frames $t = 0,\dots,T-1$;
+- $I_t^c$ is the RGB image of camera $c$ at frame $t$;
+- a view set is an ordered list of cameras $\mathcal{C} = (c_1,\dots,c_M)$.
+
+### 1. Frame embedding
+
+The frozen encoder $f$ (DINOv2-small, a ViT-S/14) maps an image to a sequence of tokens; we keep the CLS token
+$h^{\text{CLS}}\in\mathbb{R}^{384}$ and L2-normalise it:
+
+$$
+z_t^{c} = \frac{h^{\text{CLS}}\!\left(f(I_t^{c})\right)}{\left\lVert h^{\text{CLS}}\!\left(f(I_t^{c})\right)\right\rVert_2}
+\in \mathbb{R}^{384}, \qquad \lVert z_t^c\rVert_2 = 1 .
+$$
+
+The view-set feature concatenates the cameras: $x_t = \left[z_t^{c_1};\dots;z_t^{c_M}\right] \in \mathbb{R}^{D}$,
+$D = 384M$.
+
+### 2. Per-episode standardisation
+
+Each dimension $d$ is z-scored over the frames of *this* episode only (no labels, nothing shared between
+episodes):
+
+$$
+\mu_d = \frac{1}{T}\sum_{t=0}^{T-1} x_{t,d}, \qquad
+\sigma_d = \sqrt{\frac{1}{T}\sum_{t=0}^{T-1}\left(x_{t,d}-\mu_d\right)^2}, \qquad
+\tilde{x}_{t,d} = \frac{x_{t,d}-\mu_d}{\max(\sigma_d,\,10^{-8})} .
+$$
+
+This removes the episode's constant appearance (table texture, lighting) and puts every feature on the same scale,
+so the segmentation responds to how the view *changes*. Dimensions that barely move are amplified as well, which
+can add noise.
+
+### 3. Segment cost
+
+For a candidate segment of frames $[i, j)$ ($0 \le i < j \le T$), with mean
+$m_{ij} = \frac{1}{j-i}\sum_{t=i}^{j-1}\tilde{x}_t$, the cost is its within-segment sum of squared errors:
+
+$$
+C(i,j) = \sum_{t=i}^{j-1}\left\lVert \tilde{x}_t - m_{ij}\right\rVert_2^2 .
+$$
+
+With the prefix sums $S_1(j)=\sum_{t<j}\tilde{x}_t \in\mathbb{R}^D$ and $S_2(j)=\sum_{t<j}\lVert\tilde{x}_t\rVert_2^2$
+(with $S_1(0)=0$, $S_2(0)=0$), every cost takes $O(D)$ time:
+
+$$
+C(i,j) = \big(S_2(j)-S_2(i)\big) - \frac{\left\lVert S_1(j)-S_1(i)\right\rVert_2^2}{j-i} .
+$$
+
+`segment_cost_table` fills the whole $(T+1)\times(T+1)$ table in $O(T^2 D)$.
+
+### 4. Optimal K-segment split (`k2`, `k3`)
+
+We look for boundaries $0=b_0<b_1<\dots<b_{K-1}<b_K=T$, each segment at least $L$ frames long
+($b_k-b_{k-1}\ge L$), that minimise the total within-segment error:
+
+$$
+\left(\hat b_1,\dots,\hat b_{K-1}\right) = \arg\min_{b_1<\dots<b_{K-1}} \sum_{k=1}^{K} C(b_{k-1}, b_k) .
+$$
+
+This is a piecewise-constant approximation of the latent trajectory: each phase is summarised by one mean
+embedding, and the boundaries are where switching the mean reduces the error most. It is solved **exactly** by
+dynamic programming over $D_s(j)$, the best cost of splitting frames $[0,j)$ into $s$ segments:
+
+$$
+D_0(0) = 0, \qquad
+D_s(j) = \min_{\,(s-1)L \,\le\, i \,\le\, j-L} \Big[ D_{s-1}(i) + C(i,j) \Big], \qquad s = 1,\dots,K ,
+$$
+
+storing the minimising $i$ as a back-pointer. The boundaries are then read off by backtracking from $D_K(T)$.
+
+- **Cost.** $O(K\,T^2)$ table lookups. For $T\approx 100$ and $K=3$ this is negligible next to the encoder.
+- **Output.** The code reports $\hat b_1,\dots,\hat b_{K-1}$, each the first frame of a new segment.
+- **Minimum length.** $L=3$ for `k2`; $L$ = `--k3-min-len` (default 5) for `k3`.
+
+**What K = 2 maximises.** For a single boundary $b$, the reduction in error equals the between-segment term
+
+$$
+C(0,T) - \big[C(0,b) + C(b,T)\big] = \frac{b\,(T-b)}{T}\,\left\lVert m_{0b} - m_{bT}\right\rVert_2^2 ,
+$$
+
+so `k2` picks the cut where the means of "before" and "after" differ most, weighted by $b(T-b)/T$. That weight
+favours cuts near the middle, which is one reason `exo k2` lands mid-travel.
+
+**Why the wrist `k3` boundary falls at the stop.** Once the arm stops above the button, $\tilde{x}_t$ barely
+changes until the press ends. That segment has a tiny $C(\cdot,\cdot)$, so the optimal 3-segment solution puts a
+boundary exactly where the near-static segment begins.
+
+### 5. Novelty curve (`novelty`)
+
+With window $w$ (default 5), compare the mean embedding of the $w$ frames before and after each frame $t$:
+
+$$
+a_t = \frac{1}{w}\sum_{\tau=t-w}^{t-1}\tilde{x}_\tau, \qquad
+c_t = \frac{1}{w}\sum_{\tau=t}^{t+w-1}\tilde{x}_\tau, \qquad
+n_t = 1 - \frac{a_t^\top c_t}{\lVert a_t\rVert_2\,\lVert c_t\rVert_2}
+\quad (w \le t \le T-w), \qquad n_t = 0 \text{ otherwise} .
+$$
+
+$n_t\in[0,2]$ is large when the view right after $t$ points in a different latent direction from the view right
+before it. `novelty_peaks` takes the largest values of $n_t$, at least `min_gap` = 5 frames apart, and the
+`novelty` boundary is the strongest one: $\hat b = \arg\max_t n_t$.
+
+Unlike the DP, this is local. It finds the sharpest change within $\pm w$ frames, but ignores how long each phase
+lasts, so a brief camera jolt can beat a real phase change.
+
+### 6. Evaluation against references
+
+For a detector boundary $\hat b$ and a reference frame $b^{\text{ref}}$ (stop, contact or perception split), the
+signed error is $e = \hat b - b^{\text{ref}}$ (negative = early). Over the $N$ episodes where both exist,
+`latent_summary.json` reports:
+
+$$
+\bar e = \tfrac{1}{N}\textstyle\sum e_n, \quad
+\overline{|e|} = \tfrac{1}{N}\textstyle\sum |e_n|, \quad
+\operatorname{median}|e|, \quad
+\Pr(|e|\le 5) = \tfrac{1}{N}\textstyle\sum \mathbb{1}[|e_n|\le 5] .
+$$
+
+### 7. t-SNE visualisation
+
+t-SNE embeds $\{\tilde{x}_t\}$ in 2-D only for display; it plays no part in the split.
+
+1. **Neighbour probabilities in latent space.** Each frame gets Gaussian neighbour probabilities
+   $p_{j|i} \propto \exp\!\left(-\lVert\tilde{x}_i-\tilde{x}_j\rVert^2 / 2\sigma_i^2\right)$, with each $\sigma_i$
+   set so the perplexity is $\text{Perp} = \min\!\big(30,\ \max(5, \lfloor (T-1)/3\rfloor)\big)$. They are
+   symmetrised as $p_{ij} = (p_{j|i}+p_{i|j})/2T$.
+2. **Neighbour probabilities in 2-D.** Points $y_t\in\mathbb{R}^2$ use a heavy-tailed kernel
+   $q_{ij} \propto \left(1+\lVert y_i-y_j\rVert^2\right)^{-1}$.
+3. **Fit.** The $y_t$ minimise $\mathrm{KL}(P\Vert Q) = \sum_{i\ne j} p_{ij}\log\frac{p_{ij}}{q_{ij}}$, starting
+   from PCA with a fixed random seed.
+
+Because the KL term preserves neighbourhoods, frames that look alike stay together. Cluster sizes and the gaps
+between clusters are *not* metric. A phase that forms its own cluster with a long jump into it (wrist phase 3) is
+a qualitative sign that the boundary separates genuinely different views.
+
 ## Step 5: Run it (background)
 
 ```bash
