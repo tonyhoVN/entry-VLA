@@ -22,7 +22,7 @@ pip install 'pip>=25.1'
 git clone https://github.com/RobotControlStack/duobench.git ext/duobench
 git -C ext/duobench checkout 85fdb6cc0615c078af8247f49576072f1f36fa8b
 pip install -ve ext/duobench
-pip install -e .[test,io]            # this repo (core is numpy/pyyaml only)
+pip install -e .[test,io]            # this repo (core is numpy/pyyaml/scipy)
 pip install pyarrow pillow           # raw parquet inspection/export
 ```
 

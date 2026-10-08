@@ -7,9 +7,10 @@ name = "entry-vla"
 version = "0.1.0"
 description = "Entry-state prediction for handing off from a geometric planner to a frozen local VLA policy (simulation-first)."
 requires-python = ">=3.8"
-# Core (geometry, episode format, annotation, metrics) is numpy/pyyaml only so it
+# Core (geometry, episode format, annotation, metrics) is numpy/pyyaml/scipy only so it
 # can run inside either simulator environment. Heavy stacks are optional extras.
-dependencies = ["numpy>=1.21", "pyyaml>=5.4"]
+# scipy: geometry.rotations uses scipy.spatial.transform (APIs available in 1.10, the last py3.8 release).
+dependencies = ["numpy>=1.21", "pyyaml>=5.4", "scipy>=1.10"]
 
 [project.optional-dependencies]
 test = ["pytest>=6"]

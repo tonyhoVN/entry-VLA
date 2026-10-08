@@ -28,7 +28,7 @@ directories, LeRobot v3 datasets and JSONL trial/probe records.
 | `peract2` | 3.8 | CoppeliaSim 4.1 / PyRep / RLBench forks | `envs/peract2/README.md` |
 | `entryvla` | 3.12 | lerobot 0.6.1 SmolVLA, entry model, scorer | `envs/train/README.md` |
 
-`entry_vla` core needs only numpy and pyyaml (Python ≥3.8). Torch, pyarrow, PIL and matplotlib
+`entry_vla` core needs only numpy, pyyaml and scipy (Python ≥3.8; rotations use `scipy.spatial.transform`, SciPy ≥1.10). Torch, pyarrow, PIL and matplotlib
 are imported lazily where they are needed.
 
 SmolVLA cannot be loaded inside the `duobench` process: lerobot needs Python ≥3.12 and RCS

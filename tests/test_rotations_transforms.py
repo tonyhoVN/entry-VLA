@@ -76,3 +76,18 @@ def test_pose_quat_boundary():
     assert np.allclose(T1, T2)
     p, q = T.T_to_pose(T1, "xyzw")
     assert np.allclose(q, [0, 0, 0, 1])
+
+
+def test_scipy_backed_conventions(rng):
+    # batched leading dims, canonical scalar sign, scalar geodesic for a single pair
+    Ms = np.stack([R.random_rotation(rng) for _ in range(6)]).reshape(2, 3, 3, 3)
+    q = R.matrix_to_quat(Ms, "wxyz")
+    assert q.shape == (2, 3, 4) and (q[..., 0] >= 0).all()
+    assert np.allclose(R.quat_to_matrix(q, "wxyz"), Ms, atol=1e-12)
+    rv = R.so3_log(Ms)
+    assert rv.shape == (2, 3, 3) and (np.linalg.norm(rv, axis=-1) <= np.pi + 1e-12).all()
+    assert np.allclose(R.so3_exp(rv), Ms, atol=1e-12)
+    assert np.isclose(R.geodesic_angle(np.eye(3), R.rot_z(0.3)), 0.3)
+    assert np.allclose(R.rot_x(np.pi / 2) @ [0, 1, 0], [0, 0, 1], atol=1e-15)
+    with pytest.raises(ValueError):
+        R.quat_to_matrix([0.0, 0.0, 0.0, 0.0], "xyzw")
