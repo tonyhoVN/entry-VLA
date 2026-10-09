@@ -21,3 +21,6 @@ dist/
 *.ckpt
 .vscode/
 ext/
+# logs
+logs/
+*.log
