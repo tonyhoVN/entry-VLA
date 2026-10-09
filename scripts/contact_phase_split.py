@@ -49,7 +49,8 @@ def first_true(x):
     return int(i[0]) if len(i) else None
 
 
-def plot_curves(path, rows, intervals, refs, eps, k, split=None):
+def plot_curves(path, rows, intervals, ref_lines, eps, k, split=None):
+    """ref_lines: [(label, frame or None, linestyle)] drawn as grey reference lines."""
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -61,8 +62,7 @@ def plot_curves(path, rows, intervals, refs, eps, k, split=None):
             if split is not None:
                 ax.axvline(split, color="#eb6834", ls="-.", lw=1)
             ax.axvspan(s, e - 1, color="#eb6834", alpha=0.12, lw=0)
-        for name, f, ls in (("object moves", refs.get("object_motion_onset"), "--"),
-                            ("touch force", refs.get("touch_force_onset"), ":")):
+        for name, f, ls in ref_lines:
             if f is not None:
                 ax.axvline(f, color="#52514e", ls=ls, lw=1)
         for sp in ("top", "right"):
@@ -78,10 +78,10 @@ def plot_curves(path, rows, intervals, refs, eps, k, split=None):
     a2.set_ylabel("#env points\nwithin eps")
     a2.set_xlabel("frame")
     on = first_onset(intervals)
-    a1.set_title(f"End-effector contact (shaded; geometric or finger touch), first onset {on}, split dash-dot\n"
-                 f"dashed = object starts moving ({refs.get('object_motion_onset')}), "
-                 f"dotted = finger touch force ({refs.get('touch_force_onset')})", fontsize=9, loc="left",
-                 color="#0b0b0b")
+    styles = {"--": "dashed", ":": "dotted", "-": "solid"}
+    a1.set_title(f"End-effector contact (shaded; geometric or finger contact), first onset {on}, split {split} "
+                 f"(dash-dot)\n" + ", ".join(f"{styles.get(ls, ls)} = {n} ({f})" for n, f, ls in ref_lines),
+                 fontsize=9, loc="left", color="#0b0b0b")
     fig.tight_layout()
     fig.savefig(path, dpi=150, facecolor="#fcfcfb")
     plt.close(fig)
@@ -152,7 +152,8 @@ def main():
                "note": "geometric contact of end-effector RGB-D points with environment points; robot ids from "
                        "simulator masks (privileged); references are not used for the split"}
     json.dump(summary, open(os.path.join(out, "contact.json"), "w"), indent=1)
-    plot_curves(os.path.join(out, "contact_curve.png"), rows, intervals, refs, a.eps, a.k,
+    plot_curves(os.path.join(out, "contact_curve.png"), rows, intervals,
+                [("object moves", t_obj, "--"), ("touch force", refs["touch_force_onset"], ":")], a.eps, a.k,
                 phases[1]["start"] if len(phases) > 1 else None)
     if not a.no_video:
         from detect_transition_rlbench import tile, write_video
