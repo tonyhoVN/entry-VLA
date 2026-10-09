@@ -84,3 +84,19 @@ The rationale is in `docs/PLAN.md`.
 
 Indexed with `codegraph sync .` after each milestone commit and before handoff. The index covers
 source, configs and docs only; `data/`, `runs/`, `.codegraph/` and the envs are excluded or empty.
+
+## VLABench backend (contact phase split), 2026-10-09
+- Source: `ext/VLABench` @ cf588fe (OpenMOSS/VLABench), `ext/rrt-algorithms` @ 14e4796 (editable; the
+  non-editable git install lacks subpackages). Assets (12 GB, Google Drive via `scripts/download_assets.py`)
+  extracted into `ext/VLABench/VLABench/assets`.
+- Env `vlabench` (py3.10): mujoco 3.2.2, dm_control 1.0.22, gym 0.26.2, gymnasium 0.29.1, open3d 0.18.0,
+  numpy 1.25.0, h5py 3.11.0, scipy 1.14.0, mediapy 1.2.0, openai (import only); lerobot/tensorflow skipped.
+  `pip install -e ext/VLABench --no-deps`. `entryvla` env got h5py for the split.
+- `scripts/vlabench_generator.py`: one expert demo per process -> `data/raw/vlabench/<task>/seed<S>/episodes/episode<N>/data.hdf5`
+  (RGB, metric depth, geom-id segmentation, K, T_WC OpenCV, TCP T_W, MuJoCo finger/robot contacts, skill ends).
+  4 cameras at 480 px: right, left, forward (static) + Franka wrist cam (moving, excluded from the split).
+- `scripts/contact_phase_split_vlabench.py`, `scripts/run_vlabench_contact.sh` (timeout + retries per demo).
+- Short (2-skill) tasks: select_fruit, select_chemistry_tube, select_poker, select_book, select_mahjong.
+  Ran 1 seed-42 episode each (all succeeded first try); splits in `data/entry_process/vlabench_short5_seed42`.
+  Geometric onset vs MuJoCo first robot contact: 0 to -3 frames.
+- Known: depth/segmentation renders disagree on silhouette edges -> edge pixels dropped (3x3 single-id window).
