@@ -20,9 +20,10 @@ ENVS=$(cd "$ENVS" && pwd)
 # absolute interpreter paths: a venv or other python earlier on PATH must not receive the packages
 
 if ! conda env list | grep -q "^peract2 "; then
-  conda create -y -n peract2 -c conda-forge "python=3.8.*=*_cpython"
+  conda create -y -n peract2 -c conda-forge "python=3.8.*=*_cpython" pip
 fi
 PY=$ENVS/peract2/bin/python
+$PY -m pip -V >/dev/null 2>&1 || $PY -m ensurepip --upgrade
 $PY -m pip install "numpy==1.24.4" "scipy==1.10.1" "Pillow==9.5.0" "opencv-python-headless==4.10.0.84" "cffi==1.14.2" \
   "pyquaternion==0.9.9" "natsort==8.4.0" "gym==0.26.2" "PyYAML==6.0.3" "click==8.1.8" "pyarrow==17.0.0"
 $PY -m pip install -e ext/PyRep
@@ -30,9 +31,10 @@ $PY -m pip install -e ext/RLBench --no-deps
 $PY -c "import pyrep, rlbench; print('peract2 ok')"
 
 if ! conda env list | grep -q "^entryproc "; then
-  conda create -y -n entryproc -c conda-forge python=3.12 ffmpeg
+  conda create -y -n entryproc -c conda-forge python=3.12 pip ffmpeg
 fi
 PY=$ENVS/entryproc/bin/python
+$PY -m pip -V >/dev/null 2>&1 || $PY -m ensurepip --upgrade
 $PY -m pip install numpy scipy pillow matplotlib opencv-python-headless h5py pyyaml
 $PY -c "import numpy, scipy, cv2, matplotlib; print('entryproc ok')"
 echo SETUP_DONE
