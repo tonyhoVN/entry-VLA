@@ -100,3 +100,13 @@ source, configs and docs only; `data/`, `runs/`, `.codegraph/` and the envs are 
   Ran 1 seed-42 episode each (all succeeded first try); splits in `data/entry_process/vlabench_short5_seed42`.
   Geometric onset vs MuJoCo first robot contact: 0 to -3 frames.
 - Known: depth/segmentation renders disagree on silhouette edges -> edge pixels dropped (3x3 single-id window).
+
+## Single-arm entry-pose model (RLBench contact split), 2026-10-10
+- `src/entry_vla/data/rlbench_entry.py`, `scripts/build_rlbench_entry_cache.py`: samples = free-phase frames
+  (stride 5, <=12/episode) -> TCP pose at contact split (contact onset - 10). Exo-camera fused cloud (no masks),
+  instruction (hashing encoder), TCP pose + gripper + joints. Split by seed: 15-17 val, 18-20 test.
+- `src/entry_vla/models/single_entry.py`, `scripts/train_single_entry.py`: PointNet-lite K=4 relaxed WTA;
+  rotation error symmetric under pi about TCP z (parallel gripper).
+- Run v1 (local data, 5 tasks, 92 eps; 5 skipped with undefined split; 10k steps, best val step 3250, 108 s on 4090):
+  val top-1 0.084 m / 0.20 rad (task-mean baseline 0.171 m / 0.32 rad); test 0.063 m / 0.16 rad (baseline 0.144 / 0.38).
+  Offline agreement with demo entry poses only; no downstream policy success measured.
