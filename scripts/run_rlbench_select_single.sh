@@ -14,6 +14,7 @@
 #   nohup bash scripts/run_rlbench_select_single.sh > logs/rlbench_select_single.log 2>&1 &
 #
 # Workstation without limits: JOBS=12 CPUS=all bash scripts/run_rlbench_select_single.sh
+# Headless server: CoppeliaSim needs an X display (DISPLAY=:1 with its XAUTHORITY, or xvfb-run).
 # Env overrides: JOBS, THREADS, TASK_LIST, SEED_FROM (1), SEED_TO (20), PRE_FRAMES (10), CPUS (0-3), IMAGE_SIZE (256),
 # GEN_TIMEOUT (900 s), SPLIT_TIMEOUT (900 s), RAW_ROOT, OUT_ROOT, SIM_PY, PROC_PY, SPLIT_ARGS, FORCE_SPLIT=1.
 set -uo pipefail
@@ -29,6 +30,7 @@ PROC_PY=${PROC_PY:-$HOME/anaconda3/envs/entryvla/bin/python}
 export COPPELIASIM_ROOT=${COPPELIASIM_ROOT:-$HOME/CoppeliaSim_Edu_V4_1_0_Ubuntu20_04}
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:$COPPELIASIM_ROOT
 export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
+export PATH=$(dirname "$PROC_PY"):$PATH   # ffmpeg for the phase videos may live in the processing env
 if [ "$CPUS" = "all" ]; then
   NT=${THREADS:-4}; LIMIT=""
 else
