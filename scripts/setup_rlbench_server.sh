@@ -15,22 +15,24 @@ export COPPELIASIM_ROOT=${COPPELIASIM_ROOT:-$HOME/CoppeliaSim_Edu_V4_1_0_Ubuntu2
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:$COPPELIASIM_ROOT
 export QT_QPA_PLATFORM_PLUGIN_PATH=$COPPELIASIM_ROOT
 source "$CONDA_SH"
+ENVS=$(dirname "$(dirname "$CONDA_SH")")/../envs   # <conda root>/envs
+ENVS=$(cd "$ENVS" && pwd)
+# absolute interpreter paths: a venv or other python earlier on PATH must not receive the packages
 
 if ! conda env list | grep -q "^peract2 "; then
   conda create -y -n peract2 -c conda-forge "python=3.8.*=*_cpython"
 fi
-conda activate peract2
-pip install "numpy==1.24.4" "scipy==1.10.1" "Pillow==9.5.0" "opencv-python-headless==4.10.0.84" "cffi==1.14.2" \
+PY=$ENVS/peract2/bin/python
+$PY -m pip install "numpy==1.24.4" "scipy==1.10.1" "Pillow==9.5.0" "opencv-python-headless==4.10.0.84" "cffi==1.14.2" \
   "pyquaternion==0.9.9" "natsort==8.4.0" "gym==0.26.2" "PyYAML==6.0.3" "click==8.1.8" "pyarrow==17.0.0"
-pip install -e ext/PyRep
-pip install -e ext/RLBench --no-deps
-python -c "import pyrep, rlbench; print('peract2 ok')"
-conda deactivate
+$PY -m pip install -e ext/PyRep
+$PY -m pip install -e ext/RLBench --no-deps
+$PY -c "import pyrep, rlbench; print('peract2 ok')"
 
 if ! conda env list | grep -q "^entryproc "; then
   conda create -y -n entryproc -c conda-forge python=3.12 ffmpeg
 fi
-conda activate entryproc
-pip install numpy scipy pillow matplotlib opencv-python-headless h5py pyyaml
-python -c "import numpy, scipy, cv2, matplotlib; print('entryproc ok')"
+PY=$ENVS/entryproc/bin/python
+$PY -m pip install numpy scipy pillow matplotlib opencv-python-headless h5py pyyaml
+$PY -c "import numpy, scipy, cv2, matplotlib; print('entryproc ok')"
 echo SETUP_DONE
