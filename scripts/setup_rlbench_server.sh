@@ -26,6 +26,8 @@ PY=$ENVS/peract2/bin/python
 $PY -m pip -V >/dev/null 2>&1 || $PY -m ensurepip --upgrade
 $PY -m pip install "numpy==1.24.4" "scipy==1.10.1" "Pillow==9.5.0" "opencv-python-headless==4.10.0.84" "cffi==1.14.2" \
   "pyquaternion==0.9.9" "natsort==8.4.0" "gym==0.26.2" "PyYAML==6.0.3" "click==8.1.8" "pyarrow==17.0.0"
+# PyRep setup creates libcoppeliaSim.so.1 -> libcoppeliaSim.so and fails if a copied install has it
+[ -L "$COPPELIASIM_ROOT/libcoppeliaSim.so.1" ] && rm "$COPPELIASIM_ROOT/libcoppeliaSim.so.1"
 $PY -m pip install -e ext/PyRep
 $PY -m pip install -e ext/RLBench --no-deps
 $PY -c "import pyrep, rlbench; print('peract2 ok')"
