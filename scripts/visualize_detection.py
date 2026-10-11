@@ -60,10 +60,10 @@ def main():
             ok = (z > 0) & (uv[:, 0] >= 0) & (uv[:, 1] >= 0) & (uv[:, 0] < rgb.shape[1]) & (uv[:, 1] < rgb.shape[0])
             pc[uv[ok, 1].astype(int), uv[ok, 0].astype(int)] = (0, 255, 255)
         for p, col, _ in marks:
-            (u, w), z = project_world(p[None], v["K"], v["T_WC"])
-            if z[0] > 0:
+            uv1, z1 = project_world(p[None], v["K"], v["T_WC"])
+            if z1[0] > 0:
                 for im in (ov, pc):
-                    cv2.circle(im, (int(u[0]), int(u[1])), 4, col, -1)
+                    cv2.circle(im, (int(uv1[0, 0]), int(uv1[0, 1])), 4, col, -1)
         row = np.hstack([rgb, ov, pc])
         row = cv2.resize(row, None, fx=a.scale, fy=a.scale, interpolation=cv2.INTER_NEAREST)
         cv2.putText(row, f"{cam}: RGB | Qwen box + SAM mask | fused object cloud ({len(P)} pts)", (8, 22),
