@@ -70,8 +70,8 @@ def main():
     ap.add_argument("--raw-root", default="data/raw/rlbench_single")
     ap.add_argument("--out", required=True)
     ap.add_argument("--tasks", nargs="*", default=None)
-    ap.add_argument("--cams", nargs="+", default=["front", "over_shoulder_left", "wrist"],
-                    help="X-VLA views in order (default 3 views: exo, exo, ego)")
+    ap.add_argument("--cams", nargs="+", default=["front", "overhead", "wrist"],
+                    help="X-VLA views in order (default: front + overhead exo, wrist ego)")
     ap.add_argument("--val-seeds", type=int, nargs="*", default=[18, 19, 20])
     ap.add_argument("--jpeg-quality", type=int, default=95)
     ap.add_argument("--qdur", type=float, default=1.0, help="seconds covered by one action chunk")
