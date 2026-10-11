@@ -144,6 +144,9 @@ def main():
         task_env.reset_to_demo(demo)
         scene = task_env._scene
         robot = scene.robot
+        # the generator's joint-velocity action mode disables the arm position controller; planner paths
+        # and IK both drive joint POSITION targets, so enable it (as RLBench's planning/IK modes do)
+        robot.arm.set_control_loop_enabled(True)
         obs0 = scene.get_observation()
         rec["restore_check"] = {"gripper_pose_diff_m": float(np.linalg.norm(obs0.gripper_pose[:3] - demo[0].gripper_pose[:3])),
                                 "task_state_diff": float(np.abs(np.asarray(obs0.task_low_dim_state).ravel()[:10] -
