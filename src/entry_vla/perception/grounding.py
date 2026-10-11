@@ -43,7 +43,10 @@ def parse_boxes(text: str, width: int, height: int, scale: float = 1000.0) -> Li
     for it in items if isinstance(items, list) else [items]:
         if not isinstance(it, dict) or "bbox_2d" not in it:
             continue
-        x1, y1, x2, y2 = (float(v) for v in it["bbox_2d"])
+        try:
+            x1, y1, x2, y2 = (float(v) for v in it["bbox_2d"])
+        except (TypeError, ValueError):   # malformed box (e.g. label text inside bbox_2d): skip it
+            continue
         box = np.array([x1 / scale * width, y1 / scale * height, x2 / scale * width, y2 / scale * height])
         box[[0, 2]] = np.clip(np.sort(box[[0, 2]]), 0, width - 1)
         box[[1, 3]] = np.clip(np.sort(box[[1, 3]]), 0, height - 1)
