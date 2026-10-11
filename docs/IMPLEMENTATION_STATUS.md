@@ -131,3 +131,6 @@ source, configs and docs only; `data/`, `runs/`, `.codegraph/` and the envs are 
 - Offline val (89 samples, 30-step chunks over 1 s): ckpt-3000 pos 2.2 cm, rot 0.031 rad (ckpt-1000: 2.7 cm,
   0.033 rad); hold-pose baseline 8.6 cm / 0.17 rad averaged over the chunk but only 0.56 cm at step 1
   (model 1.75 cm at step 1: near-term offset). Gripper constant in this task. No closed-loop rollout yet.
+- Two-phase rollout (`scripts/xvla/run_xvla_rollout.sh`): close_microwave seed 3625 (not in training), scene
+  restored from its demo, PyRep planner to the oracle entry (contact split frame; 0.8 mm reach error), then
+  X-VLA ckpt-3000: success after 5 queries / 62 sim steps, 0 IK failures, ~0.14 s per query. One episode only.
