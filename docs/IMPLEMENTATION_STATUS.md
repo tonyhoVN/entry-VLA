@@ -121,3 +121,13 @@ source, configs and docs only; `data/`, `runs/`, `.codegraph/` and the envs are 
   full 4.2 cm 0.24 rad / 7.2 cm 0.23 rad; no-vision 3.7 / 5.2 cm (0.24 / 0.18 rad); no-text 4.1 / 7.2 cm;
   task-mean baseline 7.6 cm 0.40 rad / 9.9 cm 0.35 rad. close_fridge test ~27 cm (whole-fridge object).
   Offline demo agreement only; tiny splits.
+
+## X-VLA fine-tune on RLBench manipulation phase (server smoke test), 2026-10-10
+- Code: `scripts/xvla/{export_xvla_manip,xvla_rlbench,finetune_xvla_rlbench,eval_xvla_offline}.py`,
+  `scripts/setup_xvla_server.sh`. X-VLA @ 6bc2513 unmodified (domain registered at runtime, id 11).
+  Server env `xvla`: torch 2.7.1+cu128 (Blackwell), transformers 4.51.3. Base `2toINF/X-VLA-Pt`.
+- close_microwave: frames split_frame..end, views front/overhead/wrist, 17 train / 3 val episodes (seeds 18-20).
+  3000 iters, batch 16, freeze 500, lr 1e-4 (VLM/soft prompts x0.1), bf16, GPU 1, ~23 min, ~50 GB.
+- Offline val (89 samples, 30-step chunks over 1 s): ckpt-3000 pos 2.2 cm, rot 0.031 rad (ckpt-1000: 2.7 cm,
+  0.033 rad); hold-pose baseline 8.6 cm / 0.17 rad averaged over the chunk but only 0.56 cm at step 1
+  (model 1.75 cm at step 1: near-term offset). Gripper constant in this task. No closed-loop rollout yet.
