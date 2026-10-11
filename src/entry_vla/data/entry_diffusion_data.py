@@ -106,8 +106,21 @@ def episode_inputs(raw_ep: str, contact_json: str, n_points: int = 2048, crop_si
 # ---------------------------------------------------------------------------------------------------
 # Learned detection (deployable): Qwen3-VL box + SAM 2.1 mask on frame 0 instead of simulator mask ids.
 # ---------------------------------------------------------------------------------------------------
-CLOUD_CAMERAS = ("front", "overhead")
-CROP_CAMERAS = ("wrist", "front", "overhead")      # ego first, then exo
+CLOUD_CAMERAS = ("wrist", "front")                 # frame-0 object cloud: ego + front exo
+CROP_CAMERAS = ("front",)                          # object crop from the front box
+
+
+def voxel_grid(P: np.ndarray, C: np.ndarray, voxel_m: float):
+    """Voxel-grid filter: one point per occupied voxel (mean position and colour)."""
+    if voxel_m <= 0:
+        return P, C
+    _, inv, cnt = np.unique(np.floor(P / voxel_m).astype(np.int64), axis=0, return_inverse=True, return_counts=True)
+    inv = inv.ravel()
+    Pv = np.zeros((len(cnt), 3))
+    Cv = np.zeros((len(cnt), 3))
+    np.add.at(Pv, inv, P)
+    np.add.at(Cv, inv, C)
+    return Pv / cnt[:, None], Cv / cnt[:, None]
 
 
 def object_cluster(P: np.ndarray, link_m: float = 0.02, voxel_m: float = 0.01, min_frac: float = 0.15) -> np.ndarray:
@@ -136,8 +149,11 @@ def object_cluster(P: np.ndarray, link_m: float = 0.02, voxel_m: float = 0.01, m
 def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, cloud_cams=CLOUD_CAMERAS,
                          crop_cams=CROP_CAMERAS, n_points: int = 2048, crop_size: int = 224, erode_px: int = 2,
                          occlusion_m: float = 0.02, link_m: float = 0.02, seed: int = 0,
-                         debug: Optional[dict] = None) -> Optional[Dict[str, np.ndarray]]:
-    """Object inputs from frame 0 only (no future frames, no simulator masks): the instruction's target
+                         debug: Optional[dict] = None, cloud_filter: str = "voxel", voxel_m: float = 0.005) -> Optional[Dict[str, np.ndarray]]:
+    """cloud_filter="voxel" (default): merge the SAM-masked clouds of cloud_cams and apply only a voxel grid
+    (voxel_m), no other point processing. cloud_filter="multiview": the older pipeline described below.
+
+    Object inputs from frame 0 only (no future frames, no simulator masks): the instruction's target
     object is boxed by the VLM grounder and segmented by SAM in every camera of cloud_cams | crop_cams.
     Point cloud: eroded masks of cloud_cams back-projected with metric depth and fused in world; a point is
     kept only if every other cloud camera sees it inside its (dilated) object mask or cannot see it
@@ -161,7 +177,7 @@ def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, clo
             debug.setdefault("views", {})[cam] = {"rgb": c.rgb, "mask": mask, "box": box, "K": c.K, "T_WC": c.T_WC}
         dets[cam] = {"label": det.label, "bbox_xyxy": [float(v) for v in box], "mask_px": int(mask.sum())}
         if cam in cloud_cams and mask.sum():
-            m = binary_erosion(mask, iterations=erode_px) & c.depth_valid
+            m = (binary_erosion(mask, iterations=erode_px) if cloud_filter == "multiview" else mask) & c.depth_valid
             if m.sum():
                 pts.append(backproject_to_world(c.depth, c.K, c.T_WC, m))
                 cols.append(c.rgb[m].astype(np.float32) / 255.0)
@@ -176,7 +192,7 @@ def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, clo
             crop_names.append(cam)
     if not pts or not crops:
         return None
-    if len(views) >= 2:   # multi-view consistency: drop points another view sees outside its object mask
+    if cloud_filter == "multiview" and len(views) >= 2:   # multi-view consistency: drop points another view sees outside its object mask
         for i in range(len(pts)):
             keep = np.ones(len(pts[i]), bool)
             for j, (c, mask_d) in enumerate(views):
@@ -195,9 +211,11 @@ def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, clo
     P, C = np.concatenate(pts), np.concatenate(cols)
     if len(P) < 20:
         return None
-    keep = object_cluster(P, link_m)
-    dets["object_cluster_frac"] = float(keep.mean())
-    P, C = P[keep], C[keep]
+    if cloud_filter == "multiview":
+        keep = object_cluster(P, link_m)
+        dets["object_cluster_frac"] = float(keep.mean())
+        P, C = P[keep], C[keep]
+    P, C = voxel_grid(P, C, voxel_m)
     centroid = P.mean(0)
     if debug is not None:
         debug["object_points_W"] = P

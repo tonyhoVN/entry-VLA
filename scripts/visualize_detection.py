@@ -27,6 +27,7 @@ def main():
     ap.add_argument("--vlm", default="Qwen/Qwen3-VL-4B-Instruct")
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--scale", type=int, default=2)
+    ap.add_argument("--cache-index", default=None, help="index.json of the training cache: use its detector settings")
     a = ap.parse_args()
     import cv2
     from entry_vla.data.entry_diffusion_data import detect_object_frame0
@@ -37,8 +38,10 @@ def main():
 
     instr = load_pickle(os.path.join(a.episode, "variation_descriptions.pkl"))[0]
     dbg = {}
+    det = json.load(open(a.cache_index)).get("detector", {}) if a.cache_index else {}
+    kw = {k: det[k] for k in ("cloud_cams", "crop_cams", "cloud_filter", "voxel_m") if isinstance(det, dict) and k in det}
     s = detect_object_frame0(a.episode, instr, Qwen3VLGrounder(a.vlm, device=a.device), make_segmenter("sam2.1", a.device),
-                             debug=dbg)
+                             debug=dbg, **kw)
     marks = []
     if a.entry_json:
         c = json.load(open(a.entry_json))["candidates"][0]

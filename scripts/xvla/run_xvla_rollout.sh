@@ -7,7 +7,7 @@
 # Run from the repo root (server):  bash scripts/xvla/run_xvla_rollout.sh
 # Env overrides: TASK (close_microwave), VAR (0), SEED (random 1000-9999), CKPT, PORT (6010), PRE_FRAMES (10),
 #   GPU (1), EXEC_STEPS (10), MAX_QUERIES (40), ENTRY_CKPT (entry diffusion best.pt; unset = oracle entry),
-#   ENTRY_PY (entrytrain env python), RAW_ROOT, PROC_ROOT, OUT_ROOT, SIM_PY, PROC_PY, XVLA_PY,
+#   ENTRY_PY (entrytrain env python), OUT_TAG (suffix of the output folder), RAW_ROOT, PROC_ROOT, OUT_ROOT, SIM_PY, PROC_PY, XVLA_PY,
 #   DISPLAY / XAUTHORITY (CoppeliaSim needs an X display), COPPELIASIM_ROOT.
 set -uo pipefail
 TASK=${TASK:-close_microwave}; VAR=${VAR:-0}; SEED=${SEED:-$((1000 + RANDOM % 9000))}
@@ -27,7 +27,7 @@ export LD_LIBRARY_PATH=${LD_LIBRARY_PATH:-}:$COPPELIASIM_ROOT QT_QPA_PLATFORM_PL
 export PATH=$(dirname "$PROC_PY"):$PATH
 EP=$RAW_ROOT/$TASK/variation$VAR/seed$SEED/episodes/episode0
 PROC=$PROC_ROOT/$TASK/variation$VAR/seed$SEED/episode0
-OUT=$OUT_ROOT/seed$SEED${ENTRY_CKPT:+_predicted_entry}
+OUT=$OUT_ROOT/seed$SEED${ENTRY_CKPT:+_predicted_entry}${OUT_TAG:+_$OUT_TAG}
 mkdir -p "$PROC" "$OUT"
 echo "== $TASK variation $VAR seed $SEED (training seeds were 1-17; val 18-20) ckpt $CKPT"
 

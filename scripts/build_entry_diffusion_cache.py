@@ -35,8 +35,10 @@ def main():
     ap.add_argument("--max-object-dist", type=float, default=0.15,
                     help="skip when the nearest frame-0 object is farther from the TCP at contact (m)")
     ap.add_argument("--detector", default="oracle", choices=["oracle", "qwen_sam"])
-    ap.add_argument("--cloud-cams", nargs="+", default=["front", "overhead"])
-    ap.add_argument("--crop-cams", nargs="+", default=["wrist", "front", "overhead"])
+    ap.add_argument("--cloud-cams", nargs="+", default=["wrist", "front"])
+    ap.add_argument("--crop-cams", nargs="+", default=["front"])
+    ap.add_argument("--cloud-filter", default="voxel", choices=["voxel", "multiview"])
+    ap.add_argument("--voxel-m", type=float, default=0.005)
     ap.add_argument("--vlm", default="Qwen/Qwen3-VL-4B-Instruct")
     ap.add_argument("--segmenter", default="sam2.1")
     ap.add_argument("--device", default="cuda:0")
@@ -53,7 +55,7 @@ def main():
     index = {"format": "entry_vla.entry_diffusion_cache/1", "out_root": a.out_root, "raw_root": a.raw_root,
              "detector": "oracle_contact_object_mask_ids" if a.detector == "oracle" else
              {"name": "qwen3vl_sam2.1_frame0", "vlm": a.vlm, "segmenter": a.segmenter, "cloud_cams": a.cloud_cams,
-              "crop_cams": a.crop_cams},
+              "crop_cams": a.crop_cams, "cloud_filter": a.cloud_filter, "voxel_m": a.voxel_m},
              "split_rule": {"by": "seed", "val": a.val_seeds, "test": a.test_seeds},
              "params": {"n_points": a.n_points, "crop_size": a.crop_size, "max_object_dist": a.max_object_dist}, "episodes": [], "skipped": []}
     for i, r in enumerate(rows):
@@ -66,7 +68,8 @@ def main():
                                    max_object_dist=a.max_object_dist)
             else:
                 s = episode_inputs_detected(r["raw"], r["contact_json"], grounder, segmenter, cloud_cams=a.cloud_cams,
-                                            crop_cams=a.crop_cams, n_points=a.n_points, crop_size=a.crop_size, seed=sd)
+                                            crop_cams=a.crop_cams, n_points=a.n_points, crop_size=a.crop_size, seed=sd,
+                                            cloud_filter=a.cloud_filter, voxel_m=a.voxel_m)
             if s is None:
                 index["skipped"].append({**r, "reason": "no split frame, or touched object not found/visible at frame 0"})
                 print(f"[{i + 1}/{len(rows)}] skip {rel}", flush=True)

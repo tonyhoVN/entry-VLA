@@ -67,8 +67,9 @@ def main():
     grounder = Qwen3VLGrounder(a.vlm, device=a.device)
     segmenter = make_segmenter(a.segmenter, a.device)
     s = detect_object_frame0(a.episode, instruction, grounder, segmenter,
-                             cloud_cams=det_cfg.get("cloud_cams", ["front", "overhead"]),
-                             crop_cams=det_cfg.get("crop_cams", ["wrist", "front", "overhead"]),
+                             cloud_cams=det_cfg.get("cloud_cams", ["wrist", "front"]),
+                             crop_cams=det_cfg.get("crop_cams", ["front"]),
+                             cloud_filter=det_cfg.get("cloud_filter", "multiview"), voxel_m=det_cfg.get("voxel_m", 0.005),
                              n_points=cache_index["params"]["n_points"], seed=a.seed)
     if s is None:
         raise SystemExit("object not detected in frame 0")
