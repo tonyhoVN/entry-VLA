@@ -135,7 +135,8 @@ def object_cluster(P: np.ndarray, link_m: float = 0.02, voxel_m: float = 0.01, m
 
 def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, cloud_cams=CLOUD_CAMERAS,
                          crop_cams=CROP_CAMERAS, n_points: int = 2048, crop_size: int = 224, erode_px: int = 2,
-                         occlusion_m: float = 0.02, link_m: float = 0.02, seed: int = 0) -> Optional[Dict[str, np.ndarray]]:
+                         occlusion_m: float = 0.02, link_m: float = 0.02, seed: int = 0,
+                         debug: Optional[dict] = None) -> Optional[Dict[str, np.ndarray]]:
     """Object inputs from frame 0 only (no future frames, no simulator masks): the instruction's target
     object is boxed by the VLM grounder and segmented by SAM in every camera of cloud_cams | crop_cams.
     Point cloud: eroded masks of cloud_cams back-projected with metric depth and fused in world; a point is
@@ -156,6 +157,8 @@ def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, clo
             continue
         box = det.bbox_xyxy
         mask = segmenter.segment(c.rgb, box)
+        if debug is not None:
+            debug.setdefault("views", {})[cam] = {"rgb": c.rgb, "mask": mask, "box": box, "K": c.K, "T_WC": c.T_WC}
         dets[cam] = {"label": det.label, "bbox_xyxy": [float(v) for v in box], "mask_px": int(mask.sum())}
         if cam in cloud_cams and mask.sum():
             m = binary_erosion(mask, iterations=erode_px) & c.depth_valid
@@ -196,6 +199,8 @@ def detect_object_frame0(raw_ep: str, instruction: str, grounder, segmenter, clo
     dets["object_cluster_frac"] = float(keep.mean())
     P, C = P[keep], C[keep]
     centroid = P.mean(0)
+    if debug is not None:
+        debug["object_points_W"] = P
     rng = np.random.default_rng(seed)
     idx = rng.choice(len(P), n_points, replace=len(P) < n_points)
     return {"obj_points": np.concatenate([P[idx] - centroid, C[idx]], 1).astype(np.float32),
