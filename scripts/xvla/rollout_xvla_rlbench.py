@@ -3,8 +3,8 @@
 (run in the `peract2` env with a display; the policy runs in scripts/xvla/xvla_policy_server.py).
 
 Scene: restored from a recorded demo (``Demo.random_seed`` -> ``reset_to_demo``), e.g. a seed that was
-never used for training. Entry pose: the demo TCP pose at ``split_frame`` of its contact split
-(contact/contact.json; ORACLE entry from the demo, not a learned predictor) and the demo gripper state.
+never used for training. Entry pose: --entry-json = PREDICTED candidates (entry diffusion model on frame 0,
+tried in rank order, demo never used); otherwise the demo TCP pose at the contact split_frame (ORACLE).
   Phase 1  planner to the entry pose, collision-checked, executed step by step; attempts in order:
            PyRep get_path -> SBL with 10 goal configs -> via a pre-entry point back along the approach
            axis + linear -> (fallback) replay of the demo's own planned joint path to the entry frame.
@@ -93,7 +93,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--task", required=True)
     ap.add_argument("--episode", required=True, help="recorded demo dir (low_dim_obs.pkl, variation_*.pkl)")
-    ap.add_argument("--contact", required=True, help="contact.json of that demo (split_frame = entry)")
+    ap.add_argument("--contact", default=None, help="contact.json of that demo: split_frame = oracle entry "
+                    "(used as the entry unless --entry-json; otherwise only for the error report)")
+    ap.add_argument("--entry-json", default=None, help="predicted entry candidates (scripts/predict_entry_diffusion.py)")
+    ap.add_argument("--max-candidates", type=int, default=5, help="predicted candidates tried by the planner")
     ap.add_argument("--port", type=int, default=6010)
     ap.add_argument("--authkey", default="entry-vla-xvla")
     ap.add_argument("--exec-steps", type=int, default=10, help="targets executed per X-VLA chunk")
@@ -122,15 +125,26 @@ def main():
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
     from rlbench_single_generator import JointVelocityCompat, _patch_unimanual_release  # noqa: F401
 
-    contact = json.load(open(a.contact))
-    entry = contact["split_frame"]
-    if entry is None:
+    if a.entry_json is None and a.contact is None:
+        raise SystemExit("give --entry-json (predicted entry) and/or --contact (oracle entry)")
+    contact = json.load(open(a.contact)) if a.contact else None
+    entry = contact["split_frame"] if contact else None
+    if a.entry_json is None and entry is None:
         raise SystemExit("contact split has no split_frame")
     demo = pickle.load(open(os.path.join(a.episode, "low_dim_obs.pkl"), "rb"))
     variation = pickle.load(open(os.path.join(a.episode, "variation_number.pkl"), "rb"))
     instruction = pickle.load(open(os.path.join(a.episode, "variation_descriptions.pkl"), "rb"))[0]
-    e_obs = demo[entry]
-    entry_pose = np.asarray(e_obs.gripper_pose, dtype=np.float64)
+    oracle_pose = np.asarray(demo[entry].gripper_pose, dtype=np.float64) if entry is not None else None
+    if a.entry_json:
+        pred = json.load(open(a.entry_json))
+        candidates = [np.concatenate([c["pos_world"], c["quat_xyzw"]]) for c in pred["candidates"][:a.max_candidates]]
+        entry_grip = float(pred["gripper_open"])
+        entry_source = f"predicted: {pred.get('note', '')} ({os.path.abspath(a.entry_json)})"
+        a.demo_path_fallback = False          # the demo path would leak the oracle entry
+    else:
+        candidates, entry_grip = [oracle_pose], float(demo[entry].gripper_open)
+        entry_source = "demo TCP pose at contact split_frame (oracle)"
+    entry_pose = candidates[0]
 
     _patch_unimanual_release()
     oc = ObservationConfig()
@@ -141,8 +155,8 @@ def main():
                       robot_setup="panda", headless=True)
     env.launch()
     writer = Writer(os.path.join(a.out, "rollout.mp4"), a.fps, a.ffmpeg)
-    rec = {"task": a.task, "episode": os.path.abspath(a.episode), "instruction": instruction, "entry_frame": entry,
-           "entry_source": "demo TCP pose at contact split_frame (oracle)", "views": VIEWS}
+    rec = {"task": a.task, "episode": os.path.abspath(a.episode), "instruction": instruction, "oracle_entry_frame": entry,
+           "entry_source": entry_source, "views": VIEWS}
     try:
         task_env = env.get_task(task_file_to_task_class(a.task, False))
         task_env.set_variation(variation)
@@ -202,7 +216,7 @@ def main():
                 done = path.step()
                 scene.step()
 
-        def plan_attempts():
+        def plan_attempts(entry_pose):
             pos, quat = entry_pose[:3], entry_pose[3:7]
             yield "get_path (linear, else SBL)", lambda: run_path(robot.arm.get_path(pos, quaternion=quat, trials=300))
             yield "SBL, 10 goal configs", lambda: run_path(robot.arm.get_nonlinear_path(
@@ -228,20 +242,27 @@ def main():
                 yield "replay of the demo's planned joint path (RLBench demo planner)", replay
 
         plan_ok, attempts = False, []
-        for name, fn in plan_attempts():
-            state["phase"] = f"phase 1: motion planning [{name.split(' (')[0]}]"
-            try:
-                fn()
-                plan_ok = True
-                attempts.append({"method": name, "ok": True})
+        for ci, cand in enumerate(candidates):
+            for name, fn in plan_attempts(cand):
+                state["phase"] = f"phase 1: motion planning [cand {ci}, {name.split(' (')[0]}]"
+                try:
+                    fn()
+                    plan_ok = True
+                    attempts.append({"candidate": ci, "method": name, "ok": True})
+                    break
+                except ConfigurationPathError as e:
+                    attempts.append({"candidate": ci, "method": name, "ok": False, "error": str(e)})
+            if plan_ok:
+                entry_pose = cand
                 break
-            except ConfigurationPathError as e:
-                attempts.append({"method": name, "ok": False, "error": str(e)})
         rec["plan_attempts"] = attempts
-        set_gripper(float(e_obs.gripper_open))
+        set_gripper(entry_grip)
         reached = np.asarray(scene.get_observation().gripper_pose)
         rec["phase1"] = {"planner": attempts[-1]["method"] if attempts else None, "ok": plan_ok, "sim_steps": state["step"],
+                         "candidate_used": attempts[-1].get("candidate") if plan_ok else None,
                          "entry_pos_error_m": float(np.linalg.norm(reached[:3] - entry_pose[:3])),
+                         "target_vs_oracle_entry_m": None if oracle_pose is None else
+                         float(np.linalg.norm(entry_pose[:3] - oracle_pose[:3])),
                          "time_s": round(time.time() - t0, 1)}
         print("phase 1", rec["phase1"], flush=True)
 

@@ -26,9 +26,9 @@ def main():
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--force", action="store_true")
     a = ap.parse_args()
-    import torch
-    from PIL import Image
-    from transformers import AutoProcessor, Qwen3VLForConditionalGeneration
+    import sys
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+    from entry_vla.models.vlm_features import VLMFeatures
 
     index = json.load(open(os.path.join(a.cache, "index.json")))
     todo = []
@@ -40,37 +40,18 @@ def main():
     if not todo:
         return
     t0 = time.time()
-    proc = AutoProcessor.from_pretrained(a.model_id, local_files_only=True)
-    proc.tokenizer.padding_side = "right"
-    model = Qwen3VLForConditionalGeneration.from_pretrained(a.model_id, dtype=torch.bfloat16,
-                                                            local_files_only=True).to(a.device).eval()
-    img_tok = model.config.image_token_id
-
-    def encode(texts, images=None, image_only=False):
-        inp = proc(text=texts, images=images, return_tensors="pt", padding=True).to(a.device)
-        with torch.no_grad():
-            h = model.model(**inp).last_hidden_state.float()
-        m = (inp["input_ids"] == img_tok) if image_only else inp["attention_mask"].bool()
-        return ((h * m[..., None]).sum(1) / m.sum(1, keepdim=True).clamp_min(1)).cpu().numpy()
-
-    def chat(content):
-        return proc.apply_chat_template([{"role": "user", "content": content}], tokenize=False,
-                                        add_generation_prompt=False)
+    vlm = VLMFeatures.load(a.model_id, a.device)
 
     for i, e in enumerate(todo):
         path = os.path.join(a.cache, e["file"])
         z = dict(np.load(path))
-        text = encode([str(z["instruction"])])[0]   # bare instruction: template tokens would dominate the mean
-        crops = [Image.fromarray(c) for c in z["crops"]]
-        feats = []
-        for j in range(0, len(crops), a.batch):
-            part = crops[j:j + a.batch]
-            feats.append(encode([chat([{"type": "image"}])] * len(part), images=part, image_only=True))
-        z.update(text_feat=text.astype(np.float16), crop_feat=np.concatenate(feats).astype(np.float16),
+        text = vlm.text(str(z["instruction"]))   # bare instruction: template tokens would dominate the mean
+        crop_feat = vlm.crops(list(z["crops"]), a.batch)
+        z.update(text_feat=text.astype(np.float16), crop_feat=crop_feat.astype(np.float16),
                  vlm_model=np.array(a.model_id), vlm_feature="last_hidden_state mean (bare instruction tokens | image tokens)")
         np.savez_compressed(path + ".tmp.npz", **z)
         os.replace(path + ".tmp.npz", path)
-        print(f"[{i + 1}/{len(todo)}] {e['file']} text {text.shape} crops {len(crops)}", flush=True)
+        print(f"[{i + 1}/{len(todo)}] {e['file']} text {text.shape} crops {len(crop_feat)}", flush=True)
     index["vlm"] = {"model_id": a.model_id, "dim": int(text.shape[0])}
     json.dump(index, open(os.path.join(a.cache, "index.json"), "w"), indent=1)
     print(f"done in {time.time() - t0:.0f}s")
