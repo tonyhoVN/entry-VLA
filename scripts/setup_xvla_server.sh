@@ -12,7 +12,7 @@ XVLA_ROOT=${XVLA_ROOT:-$(cd .. && pwd)/X-VLA}
 XVLA_COMMIT=${XVLA_COMMIT:-6bc2513}
 TORCH_INDEX=${TORCH_INDEX:-https://download.pytorch.org/whl/cu128}
 source "$CONDA_SH"
-ENVS=$(cd "$(dirname "$(dirname "$CONDA_SH")")/envs" && pwd)
+ENVS=$(cd "$(dirname "$(dirname "$(dirname "$CONDA_SH")")")/envs" && pwd)   # <conda root>/envs
 
 [ -d "$XVLA_ROOT" ] || git clone -q https://github.com/2toinf/X-VLA.git "$XVLA_ROOT"
 git -C "$XVLA_ROOT" checkout -q "$XVLA_COMMIT"
