@@ -98,6 +98,8 @@ def main():
     ap.add_argument("--precision", default="bf16", choices=["fp32", "bf16"])
     ap.add_argument("--device", default="cuda:0")
     ap.add_argument("--eval-every", type=int, default=1000)
+    ap.add_argument("--patience", type=int, default=0,
+                    help="early stop after this many evaluations without val improvement (0 = off)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
@@ -192,7 +194,7 @@ def main():
         return res
 
     log = open(os.path.join(a.out, "train_log.jsonl"), "w")
-    best, t0, n = None, time.time(), len(tr["task"])
+    best, stale, t0, n = None, 0, time.time(), len(tr["task"])
     for step in range(1, a.steps + 1):
         idx = rng.choice(n, a.batch_size, replace=n < a.batch_size)
         with torch.autocast(**amp):
@@ -211,10 +213,15 @@ def main():
             print(json.dumps(rec), flush=True)
             score = v["medoid_pos_m"] + 0.1 * v["medoid_rot_rad"]
             if best is None or score < best[0]:
-                best = (score, step)
+                best, stale = (score, step), 0
+            else:
+                stale += 1
                 torch.save({"model": model.state_dict(), "config": vars(cfg), "args": vars(a), "step": step,
                             "R_ref": R_ref, "feat_norm": {"mu_t": mu_t, "sd_t": sd_t, "mu_v": mu_v, "sd_v": sd_v}},
                            os.path.join(a.out, "best.pt"))
+            if a.patience and stale >= a.patience:
+                print(f"early stop at step {step}: no val improvement for {stale} evaluations (best {best[1]})", flush=True)
+                break
     ck = torch.load(os.path.join(a.out, "best.pt"), map_location=dev, weights_only=False)
     model.load_state_dict(ck["model"])
     report = {"best_step": best[1], "selection": "val medoid_pos_m + 0.1 * medoid_rot_rad",
