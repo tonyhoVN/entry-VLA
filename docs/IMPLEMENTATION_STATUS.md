@@ -110,3 +110,14 @@ source, configs and docs only; `data/`, `runs/`, `.codegraph/` and the envs are 
 - Run v1 (local data, 5 tasks, 92 eps; 5 skipped with undefined split; 10k steps, best val step 3250, 108 s on 4090):
   val top-1 0.084 m / 0.20 rad (task-mean baseline 0.171 m / 0.32 rad); test 0.063 m / 0.16 rad (baseline 0.144 / 0.38).
   Offline agreement with demo entry poses only; no downstream policy success measured.
+
+## Conditional entry-pose diffusion (RLBench), 2026-10-10
+- Cache `scripts/build_entry_diffusion_cache.py` (oracle contact object = nearest non-structure mask id at frame 0
+  to TCP at contact onset; skipped if > 0.15 m), `scripts/embed_vlm_features.py` (frozen Qwen3-VL-4B, last
+  hidden state mean: bare instruction tokens / crop image tokens), `scripts/train_entry_diffusion.py`.
+- Model `src/entry_vla/models/entry_diffusion.py` (+ `pointnet2.py`): pose [p_C/0.2, rot6d], cosine DDPM 100
+  steps, FiLM MLP, CFG dropout 0.1, DDIM 25 steps, 16 samples, medoid selection. Centroid c also conditioned.
+- Local data: 63/14/10 episodes (10 skipped). 20k steps, ~10 min each on the 4090. Medoid val / test errors:
+  full 4.2 cm 0.24 rad / 7.2 cm 0.23 rad; no-vision 3.7 / 5.2 cm (0.24 / 0.18 rad); no-text 4.1 / 7.2 cm;
+  task-mean baseline 7.6 cm 0.40 rad / 9.9 cm 0.35 rad. close_fridge test ~27 cm (whole-fridge object).
+  Offline demo agreement only; tiny splits.
