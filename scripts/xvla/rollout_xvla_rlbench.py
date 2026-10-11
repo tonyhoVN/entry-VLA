@@ -5,8 +5,10 @@
 Scene: restored from a recorded demo (``Demo.random_seed`` -> ``reset_to_demo``), e.g. a seed that was
 never used for training. Entry pose: the demo TCP pose at ``split_frame`` of its contact split
 (contact/contact.json; ORACLE entry from the demo, not a learned predictor) and the demo gripper state.
-  Phase 1  planner: PyRep ``arm.get_path`` (SBL sampling planner, collision-checked) to the entry pose,
-           executed step by step; gripper set to the demo state at the entry.
+  Phase 1  planner to the entry pose, collision-checked, executed step by step; attempts in order:
+           PyRep get_path -> SBL with 10 goal configs -> via a pre-entry point back along the approach
+           axis + linear -> (fallback) replay of the demo's own planned joint path to the entry frame.
+           The method used is in rollout.json and the video label; gripper set to the demo state.
   Phase 2  X-VLA: query with front/overhead/wrist RGB + instruction + current TCP pose; execute the
            first --exec-steps absolute EE6D targets of each chunk with Jacobian IK (joint targets,
            stepped until reached or stalled), gripper from p(closed) > 0.5; repeat up to --max-queries.
@@ -97,6 +99,9 @@ def main():
     ap.add_argument("--exec-steps", type=int, default=10, help="targets executed per X-VLA chunk")
     ap.add_argument("--max-queries", type=int, default=40)
     ap.add_argument("--max-ik-steps", type=int, default=20, help="sim steps per target before moving on")
+    ap.add_argument("--pre-entry-offset", type=float, default=0.08, help="via point back along the approach axis (m)")
+    ap.add_argument("--no-demo-path-fallback", dest="demo_path_fallback", action="store_false",
+                    help="do not replay the demo's planned joint path when every planning attempt fails")
     ap.add_argument("--image-size", type=int, default=256, help="must match the training images")
     ap.add_argument("--fps", type=int, default=20)
     ap.add_argument("--ffmpeg", default=shutil.which("ffmpeg") or os.path.expanduser("~/miniconda3/envs/entryproc/bin/ffmpeg"))
@@ -191,19 +196,51 @@ def main():
         # ---- phase 1: motion planning to the entry pose
         t0 = time.time()
         writer.add(frame(obs0))
-        try:
-            path = robot.arm.get_path(entry_pose[:3], quaternion=entry_pose[3:7], ignore_collisions=False, trials=300)
+        def run_path(path):
             done = False
             while not done:
                 done = path.step()
                 scene.step()
-            plan_ok = True
-        except ConfigurationPathError as e:
-            plan_ok = False
-            rec["plan_error"] = str(e)
+
+        def plan_attempts():
+            pos, quat = entry_pose[:3], entry_pose[3:7]
+            yield "get_path (linear, else SBL)", lambda: run_path(robot.arm.get_path(pos, quaternion=quat, trials=300))
+            yield "SBL, 10 goal configs", lambda: run_path(robot.arm.get_nonlinear_path(
+                pos, quaternion=quat, trials=1000, max_configs=10, distance_threshold=1.5, max_time_ms=50,
+                trials_per_goal=5))
+            approach = quat_xyzw_to_R(quat)[:, 2]          # TCP z = approach axis
+            pre = pos - a.pre_entry_offset * approach
+
+            def via():
+                run_path(robot.arm.get_nonlinear_path(pre, quaternion=quat, trials=1000, max_configs=10,
+                                                      distance_threshold=1.5, max_time_ms=50, trials_per_goal=5))
+                run_path(robot.arm.get_linear_path(pos, quaternion=quat))
+            yield f"via pre-entry {a.pre_entry_offset:.2f} m back, then linear", via
+            if a.demo_path_fallback:
+                def replay():
+                    for o in demo[1:entry + 1]:
+                        q = np.asarray(o.joint_positions, dtype=np.float64)
+                        robot.arm.set_joint_target_positions(q)
+                        for _ in range(a.max_ik_steps):
+                            scene.step()
+                            if np.allclose(robot.arm.get_joint_positions(), q, atol=0.01):
+                                break
+                yield "replay of the demo's planned joint path (RLBench demo planner)", replay
+
+        plan_ok, attempts = False, []
+        for name, fn in plan_attempts():
+            state["phase"] = f"phase 1: motion planning [{name.split(' (')[0]}]"
+            try:
+                fn()
+                plan_ok = True
+                attempts.append({"method": name, "ok": True})
+                break
+            except ConfigurationPathError as e:
+                attempts.append({"method": name, "ok": False, "error": str(e)})
+        rec["plan_attempts"] = attempts
         set_gripper(float(e_obs.gripper_open))
         reached = np.asarray(scene.get_observation().gripper_pose)
-        rec["phase1"] = {"planner": "PyRep get_path (SBL)", "ok": plan_ok, "sim_steps": state["step"],
+        rec["phase1"] = {"planner": attempts[-1]["method"] if attempts else None, "ok": plan_ok, "sim_steps": state["step"],
                          "entry_pos_error_m": float(np.linalg.norm(reached[:3] - entry_pose[:3])),
                          "time_s": round(time.time() - t0, 1)}
         print("phase 1", rec["phase1"], flush=True)
